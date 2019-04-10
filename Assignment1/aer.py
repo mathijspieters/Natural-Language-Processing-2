@@ -63,7 +63,7 @@ class AERSufficientStatistics:
         """
         Update AER sufficient statistics for a set of predicted links given goldstandard information.
 
-        :param sure: set of sure links 
+        :param sure: set of sure links
             a links is a tuple of 1-based positions (from, to) where 0 is reserved for NULL
         :param probable: set of probable links (must incude sure links)
         :param predicted: set of predicted links
@@ -83,7 +83,7 @@ def test(path):
     # 1. Read in gold alignments
     gold_sets = read_naacl_alignments(path)
 
-    # 2. Here you would have the predictions of your own algorithm, 
+    # 2. Here you would have the predictions of your own algorithm,
     #  for the sake of the illustration, I will cheat and make some predictions by corrupting 50% of sure gold alignments
     predictions = []
     for s, p in gold_sets:
@@ -95,9 +95,9 @@ def test(path):
 
     # 3. Compute AER
 
-    # first we get an object that manages sufficient statistics 
+    # first we get an object that manages sufficient statistics
     metric = AERSufficientStatistics()
-    # then we iterate over the corpus 
+    # then we iterate over the corpus
     for gold, pred in zip(gold_sets, predictions):
         metric.update(sure=gold[0], probable=gold[1], predicted=pred)
     # AER
@@ -105,4 +105,4 @@ def test(path):
 
 
 if __name__ == '__main__':
-    test('validation/dev.wa.nonullalign')
+    test('data/validation/dev.wa.nonullalign')

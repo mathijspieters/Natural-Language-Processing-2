@@ -4,8 +4,8 @@ class IBM1():
     def __init__(self, something, who_cares):
         self.corpus = None
 
-    def get_corpus(self, path1, path2):
-        self.corpus = read_data(path1, path2)
+    def get_corpus(self, e_path, f_path):
+        self.corpus = read_data(e_path, f_path)
 
     def fit(self):
         if self.corpus is None:

@@ -4,8 +4,10 @@ class Sentence():
     """
     Stores the sentence, makes it iterable and initialises a counter object.
     """
-    def __init__(self, s):
+    def __init__(self, s, pad=False):
         self.s = s.split(" ")
+        if pad:
+            self.s = ["NULL"] + self.s
         self.c = Counter(self.s)
         self.i = 0
 
@@ -41,5 +43,5 @@ def read_data(e_path, f_path):
     corpus = []
 
     for e, f in zip(fe.split(" \n"), ff.split(" \n")):
-        corpus.append((Sentence(e),Sentence(f)))
+        corpus.append((Sentence(e, pad=True),Sentence(f)))
     return corpus

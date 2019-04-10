@@ -1,5 +1,6 @@
 from read_data import read_data
 from IBM1 import IBM1
+from utils import save, load
 
 
 ENGLISH = 'data/training/hansards.36.2.e'
@@ -13,3 +14,6 @@ if __name__ == '__main__':
 
     ibm1.fit()
 
+    print(ibm1.translate("The black cat"))
+
+    save(ibm1, "Henk")

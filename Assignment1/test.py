@@ -6,6 +6,7 @@ E, F = corpus[10]
 print(E, F)
 
 for e in E:
-    print(e, E.count("frits"))
+    print(e)
+    print(E.count)
 for f in F:
     print(f)

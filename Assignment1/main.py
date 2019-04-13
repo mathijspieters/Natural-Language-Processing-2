@@ -9,11 +9,15 @@ FRENCH = 'data/training/hansards.36.2.f'
 
 if __name__ == '__main__':
     iterations = 10
-    ibm1 = IBM1(iterations)
+    ibm1 = IBM1()
     ibm1.get_corpus(ENGLISH, FRENCH)
 
-    ibm1.fit()
+    ibm1.fit(iterations=iterations, save=True)
+
+    #ibm1.load('IBM-9')
 
     print(ibm1.translate("The black cat"))
 
-    save(ibm1, "Henk")
+    alignments_matrix, alignment = ibm1.viterbi_alignment('the black cat', 'le chat noir')
+    print(alignment)
+    print(alignments_matrix)

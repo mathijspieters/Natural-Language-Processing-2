@@ -87,9 +87,20 @@ class IBM1():
 
         return " ".join(target)
 
-    def viterbi_alignment(self, source, target):
-        source = source.replace("\n", "").split(" ")
-        target = target.replace("\n", "").split(" ")
+    def validation(self, e_path, f_path, save_file='results/results.out'):
+        validation_corpus = read_data(e_path, f_path)
+        
+        with open(save_file, 'w') as f:
+            for i, (E, F) in enumerate(validation_corpus):
+                _, alignment = self.viterbi_alignment(E.s, F.s, split=False)
+                for j in range(alignment.shape[0]):
+                    f.write("%d %d %d S\n" % (i+1, j+1, alignment[j]))
+
+
+    def viterbi_alignment(self, source, target, split=True):
+        if split:
+            source = source.replace("\n", "").split(" ")
+            target = target.replace("\n", "").split(" ")
 
         alignment_p = np.zeros(shape=(len(source),len(target)))
         

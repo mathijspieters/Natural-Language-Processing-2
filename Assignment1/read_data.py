@@ -1,5 +1,6 @@
 from collections import Counter
 from sentence import Sentence
+from corpus import Corpus
 
 def read_data(e_path, f_path):
     """
@@ -13,8 +14,11 @@ def read_data(e_path, f_path):
     fe = open(e_path, "r").read()
     ff = open(f_path, "r").read()
 
-    corpus = []
+    corpus = Corpus()
 
     for e, f in zip(fe.split(" \n"), ff.split(" \n")):
-        corpus.append((Sentence(e, pad=True),Sentence(f)))
+        e = e.split(' ')
+        f = f.split(' ')
+        corpus.add_foreign(set(f))
+        corpus.corpus.append((Sentence(e, pad=True), Sentence(f)))
     return corpus

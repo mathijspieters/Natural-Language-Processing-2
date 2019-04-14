@@ -16,7 +16,7 @@ if __name__ == '__main__':
     ibm1 = IBM1()
     ibm1.get_corpus(ENGLISH, FRENCH)
 
-    #ibm1.fit(iterations=iterations, save=True)
+    ibm1.fit(iterations=iterations, save=True)
 
     ibm1.load('IBM-9')
 

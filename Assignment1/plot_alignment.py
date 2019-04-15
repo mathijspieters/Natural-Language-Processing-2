@@ -30,3 +30,5 @@ def plot(alignments, words1, words2, title="test"):
     plt.xlabel('French')
     plt.ylabel('English')
     fig.savefig('results/%s.png' % title, dpi=300)
+
+    plt.clf()

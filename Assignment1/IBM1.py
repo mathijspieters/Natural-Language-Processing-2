@@ -94,34 +94,30 @@ class IBM1():
         validation_corpus = read_data(e_path, f_path)
 
         with open(save_file, 'w') as f:
-            for i, (E, F) in enumerate(validation_corpus):
-                alignment, best = self.viterbi_alignment(E.s, F.s, split=False)
-                for j in range(alignment.shape[0]):
-                    for a in range(alignment.shape[1]):
-                        if best[j] == a: #or alignment[j,a] > 1.0e-1:
-                            pred = "S" if best[j] == a else "P"
-                            f.write("%d %d %d %s\n" % (i+1, j+1, a+2, pred))
+            for i, (E, F) in enumerate(validation_corpus.corpus):
+                values, _ = self.viterbi_alignment(E.s, F.s, split=False)
+                for j in range(1, values.shape[0]):
+                    winner = np.argwhere(values[j] == np.max(values[j])).flatten()
+                    score = np.abs(winner-j)
+                    best = winner[np.argmin(score)]
+                    f.write("%d %d %d S\n" % (i+1, j, best+1))
 
     def plot_alignments(self, e_path, f_path):
         validation_corpus = read_data(e_path, f_path)
-        for i, (E, F) in enumerate(validation_corpus):
+        for i, (E, F) in enumerate(validation_corpus.corpus):
             alignment, _ = self.viterbi_alignment(E.s, F.s, split=False)
             plot_alignment.plot(alignment, E.s, F.s, i)
 
     def viterbi_alignment(self, source, target, split=True):
         if split:
-            source = source.replace("\n", "").split(" ")
-            target = target.replace("\n", "").split(" ")
+            source = source.replace(" \n", "").split(" ")
+            target = target.replace(" \n", "").split(" ")
 
         alignment_p = np.zeros(shape=(len(source),len(target)))
 
         for i, word_source in enumerate(source):
             for j, word_target in enumerate(target):
-                denom = sum([self.thetas[word_source][f] for f in self.thetas[word_source].keys()])
-                denom = 1 if denom == 0 else denom
-
-                alignment_p[i,j] = self.thetas[word_source].get(word_target, self.theta_0) / denom
-
+                alignment_p[i,j] = self.thetas[word_source].get(word_target, self.theta_0) 
 
         alignments_sum = np.sum(alignment_p, axis=1, keepdims=True)
 

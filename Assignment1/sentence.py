@@ -5,7 +5,7 @@ class Sentence():
     Stores the sentence, makes it iterable and initialises a counter object.
     """
     def __init__(self, s, pad=False):
-        self.s = s.split(" ")
+        self.s = s
         if pad:
             self.s = ["NULL"] + self.s
         self.c = Counter(self.s)

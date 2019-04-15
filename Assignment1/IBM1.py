@@ -11,18 +11,24 @@ class IBM1():
         self.corpus = None
         self.thetas = None
         self.theta_0 = None
+        self.save_dir = 'model'
 
     def get_corpus(self, e_path, f_path, l=-1):
-        self.corpus = read_data(e_path, f_path)[:l]
+        self.corpus = read_data(e_path, f_path)
+        self.corpus.corpus = self.corpus.corpus[:l]
 
     def save(self, name):
-        doc = {'thetas':self.thetas, 'theta_0':self.theta_0}
+        doc = {'thetas': self.thetas, 'theta_0': self.theta_0}
         utils.save(doc, os.path.join('model', name+'.pickle'))
 
     def load(self, name):
-        doc = utils.load( os.path.join('model', name+'.pickle'))
-        self.thetas = doc['thetas']
-        self.theta_0 = doc['theta_0']
+        d = os.path.join(self.save_dir, name+'.pickle')
+        if os.path.exists(d):
+            doc = utils.load(d)
+            self.thetas = doc['thetas']
+            self.theta_0 = doc['theta_0']
+        else:
+            raise Exception('No model at {}'.format(d))
 
     def fit(self, iterations=10, save=False):
         if self.corpus is None:
@@ -31,20 +37,16 @@ class IBM1():
 
         print("Welcome to IBM1. Today, we'll be training for", iterations, "iterations. We wish you a pleasant journey.")
 
-        tmp = set()
-        for _, F in self.corpus:
-            tmp = tmp | set(F.c.keys())
-
-        total_french_words = len(tmp)
+        total_french_words = len(self.corpus.foreign_words)
         self.theta_0 = 1/total_french_words
 
         self.thetas = defaultdict(dict)
-
+        print('test')
         for i in range(iterations):
             print("Log likelihood:", self.Likelihood())
             count_ef = Counter()
             count_e = Counter()
-            for E, F in tqdm(self.corpus):
+            for E, F in tqdm(self.corpus.corpus):
                 for f in F:
                     Z = 0
                     for e in E:
@@ -54,7 +56,7 @@ class IBM1():
                         count_ef[(e,f)] += c
                         count_e[e] += c
 
-            for e,f in count_ef:
+            for e, f in count_ef:
                 self.thetas[e][f] = count_ef[(e,f)]/count_e[e]
 
             if save:
@@ -64,7 +66,7 @@ class IBM1():
 
     def Likelihood(self):
         LL = 0
-        for E, F in self.corpus:
+        for E, F in self.corpus.corpus:
             for f in F:
                 theta_sum = 0
                 for e in E:
@@ -112,7 +114,7 @@ class IBM1():
             target = target.replace("\n", "").split(" ")
 
         alignment_p = np.zeros(shape=(len(source),len(target)))
-        
+
         for i, word_source in enumerate(source):
             for j, word_target in enumerate(target):
                 denom = sum([self.thetas[word_source][f] for f in self.thetas[word_source].keys()])
@@ -120,7 +122,7 @@ class IBM1():
 
                 alignment_p[i,j] = self.thetas[word_source].get(word_target, self.theta_0) / denom
 
-        
+
         alignments_sum = np.sum(alignment_p, axis=1, keepdims=True)
 
         alignment_p /= alignments_sum

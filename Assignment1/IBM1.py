@@ -4,6 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import utils
 import os
+import plot_alignment
 
 class IBM1():
     def __init__(self):
@@ -89,13 +90,21 @@ class IBM1():
 
     def validation(self, e_path, f_path, save_file='results/results.out'):
         validation_corpus = read_data(e_path, f_path)
-        
+
         with open(save_file, 'w') as f:
             for i, (E, F) in enumerate(validation_corpus):
-                _, alignment = self.viterbi_alignment(E.s, F.s, split=False)
+                alignment, best = self.viterbi_alignment(E.s, F.s, split=False)
                 for j in range(alignment.shape[0]):
-                    f.write("%d %d %d S\n" % (i+1, j+1, alignment[j]))
+                    for a in range(alignment.shape[1]):
+                        if best[j] == a: #or alignment[j,a] > 1.0e-1:
+                            pred = "S" if best[j] == a else "P"
+                            f.write("%d %d %d %s\n" % (i+1, j+1, a+2, pred))
 
+    def plot_alignments(self, e_path, f_path):
+        validation_corpus = read_data(e_path, f_path)
+        for i, (E, F) in enumerate(validation_corpus):
+            alignment, _ = self.viterbi_alignment(E.s, F.s, split=False)
+            plot_alignment.plot(alignment, E.s, F.s, i)
 
     def viterbi_alignment(self, source, target, split=True):
         if split:
@@ -106,13 +115,16 @@ class IBM1():
         
         for i, word_source in enumerate(source):
             for j, word_target in enumerate(target):
-                alignment_p[i,j] = self.thetas[word_source].get(word_target, self.theta_0)
+                denom = sum([self.thetas[word_source][f] for f in self.thetas[word_source].keys()])
+                denom = 1 if denom == 0 else denom
+
+                alignment_p[i,j] = self.thetas[word_source].get(word_target, self.theta_0) / denom
 
         
         alignments_sum = np.sum(alignment_p, axis=1, keepdims=True)
 
         alignment_p /= alignments_sum
 
-        alignments = np.argmax(alignment_p, axis=0)
+        alignments = np.argmax(alignment_p, axis=1)
 
         return alignment_p, alignments

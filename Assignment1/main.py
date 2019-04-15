@@ -26,4 +26,6 @@ if __name__ == '__main__':
 
     ibm1.validation(ENGLISH_VAL, FRENCH_VAL)
 
-    aer.test('results/results.out')
+    #ibm1.plot_alignments(ENGLISH_VAL, FRENCH_VAL)
+
+    aer.test_model(path_model='results/results.out')

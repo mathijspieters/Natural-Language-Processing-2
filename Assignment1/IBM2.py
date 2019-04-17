@@ -8,9 +8,9 @@ import plot_alignment
 from IBM1 import IBM1
 
 class IBM2(IBM1):
-    def jump(self, aj, j, l, m):
+    def jump(self, aj, j, E, F):
         """ Jump function from Vogel et al. (1996) """
-        return aj - int(j*l/m)
+        return aj - int(j*len(E)/len(F))
 
     def fit(self, iterations=10, save=False):
         if self.corpus is None:
@@ -26,7 +26,7 @@ class IBM2(IBM1):
         L = self.corpus.get_L()
         self.gammas = {l: 1./(2*L + 1) for l in range(-L, L+1)}
         for i in range(iterations):
-            #print("Log likelihood:", self.Likelihood())
+            print("Log likelihood:", self.Likelihood())
             count_ef = Counter()
             count_e = Counter()
             count_gamma = Counter()
@@ -34,14 +34,10 @@ class IBM2(IBM1):
                 for j, f in enumerate(F):
                     Z = 0
                     for aj, e in enumerate(E):
-                        x = self.jump(aj, j, len(E), len(F))
-                        if abs(x) > L:
-                            print(E)
-                            print(F)
-                            print(aj, j, len(E), len(F))
+                        x = self.jump(aj, j, E, F)
                         Z += self.gammas[x]*self.thetas[e].get(f, self.theta_0)
                     for j, e in enumerate(E):
-                        x = self.jump(aj, j, len(E), len(F))
+                        x = self.jump(aj, j, E, F)
                         c = self.thetas[e].get(f, self.theta_0)*self.gammas[x]/Z
 
                         count_ef[(e, f)] += c
@@ -57,3 +53,14 @@ class IBM2(IBM1):
                 self.save('IBM2-%d' % i)
 
         print("Log likelihood:", self.Likelihood())
+
+    def Likelihood(self):
+        LL = 0
+        for E, F in self.corpus.corpus:
+            for j, f in enumerate(F):
+                theta_sum = 0
+                for aj, e in enumerate(E):
+                    x = self.jump(aj, j, E, F)
+                    theta_sum += self.gammas[x]*self.thetas[e].get(f, self.theta_0)
+                LL += np.log(theta_sum)
+        return LL

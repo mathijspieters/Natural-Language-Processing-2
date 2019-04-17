@@ -42,10 +42,6 @@ class IBM1():
         self.theta_0 = 1/total_french_words
 
         self.thetas = defaultdict(dict)
-<<<<<<< HEAD
-
-=======
->>>>>>> b6bc967a52027c0e5cf92e8dce040971fc9eb57d
         for i in range(iterations):
             print("Log likelihood:", self.Likelihood())
             count_ef = Counter()

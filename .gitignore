@@ -1,3 +1,2 @@
-**/__pycache__
-Assignment1/model
-Assignment1/results
+.DS_STORE
+__pycache__

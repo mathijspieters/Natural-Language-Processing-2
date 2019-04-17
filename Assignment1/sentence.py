@@ -17,6 +17,9 @@ class Sentence():
     def __iter__(self):
         return self
 
+    def __len__(self):
+        return len(self.s)
+
     def __next__(self):
         if self.i == len(self.s):
             self.i = 0
@@ -27,4 +30,3 @@ class Sentence():
 
     def count(self, token):
         return self.c[token]
-

@@ -16,6 +16,7 @@ class IBM1():
     def get_corpus(self, e_path, f_path, l=-1):
         self.corpus = read_data(e_path, f_path)
         self.corpus.corpus = self.corpus.corpus[:l]
+        print("Loaded Corpus")
 
     def save(self, name):
         doc = {'thetas': self.thetas, 'theta_0': self.theta_0}
@@ -41,7 +42,7 @@ class IBM1():
         self.theta_0 = 1/total_french_words
 
         self.thetas = defaultdict(dict)
-        print('test')
+
         for i in range(iterations):
             print("Log likelihood:", self.Likelihood())
             count_ef = Counter()
@@ -117,7 +118,7 @@ class IBM1():
 
         for i, word_source in enumerate(source):
             for j, word_target in enumerate(target):
-                alignment_p[i,j] = self.thetas[word_source].get(word_target, self.theta_0) 
+                alignment_p[i,j] = self.thetas[word_source].get(word_target, self.theta_0)
 
         alignments_sum = np.sum(alignment_p, axis=1, keepdims=True)
 

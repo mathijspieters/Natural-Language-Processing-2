@@ -1,5 +1,6 @@
 from read_data import read_data
 from IBM1 import IBM1
+from IBM2 import IBM2
 from utils import save, load
 import aer
 
@@ -10,24 +11,29 @@ FRENCH = 'data/training/hansards.36.2.f'
 ENGLISH_VAL = 'data/validation/dev.e'
 FRENCH_VAL = 'data/validation/dev.f'
 
+model_2 = True
 
 if __name__ == '__main__':
     iterations = 10
-    ibm1 = IBM1()
-    ibm1.get_corpus(ENGLISH, FRENCH)
 
-    #ibm1.fit(iterations=iterations, save=True)
+    if model_2:
+        ibm = IBM2()
+    else:
+        ibm = IBM1()
+    ibm.get_corpus(ENGLISH, FRENCH)
 
-    ibm1.load('IBM-9')
+    ibm.fit(iterations=iterations, save=True)
 
-    print(ibm1.Likelihood())
+    ibm.load('IBM-9')
 
-    print(ibm1.translate("the old cat"))
+    print(ibm.Likelihood())
 
-    alignments_matrix, alignment = ibm1.viterbi_alignment('the black cat', 'le chat noir')
+    print(ibm.translate("the old cat"))
 
-    ibm1.validation(ENGLISH_VAL, FRENCH_VAL)
+    alignments_matrix, alignment = ibm.viterbi_alignment('the black cat', 'le chat noir')
+
+    ibm.validation(ENGLISH_VAL, FRENCH_VAL)
 
     aer.test_model(path_model='results/results.out')
 
-    ibm1.plot_alignments(ENGLISH_VAL, FRENCH_VAL)
+    ibm.plot_alignments(ENGLISH_VAL, FRENCH_VAL)

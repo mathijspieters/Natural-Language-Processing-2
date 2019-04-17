@@ -78,6 +78,30 @@ class AERSufficientStatistics:
         return 1 - (self.a_and_s + self.a_and_p) / (self.a + self.s)
 
 
+def test_model(path_model, path_true='data/validation/dev.wa.nonullalign'):
+    gold_sets = read_naacl_alignments(path_true)
+
+    # 2. Here you would have the predictions of your own algorithm,
+    model_sets = read_naacl_alignments(path_model)
+    
+    predictions = []
+    for s, p in model_sets:
+        links = set()
+        for link in s:
+            links.add(link)
+        predictions.append(links)
+
+    # 3. Compute AER
+
+    # first we get an object that manages sufficient statistics
+    metric = AERSufficientStatistics()
+    # then we iterate over the corpus
+    for gold, pred in zip(gold_sets, predictions):
+        metric.update(sure=gold[0], probable=gold[1], predicted=pred)
+    # AER
+    print(metric.aer())
+
+
 def test(path):
     from random import random
     # 1. Read in gold alignments

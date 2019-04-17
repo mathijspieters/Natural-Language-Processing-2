@@ -16,9 +16,11 @@ if __name__ == '__main__':
     ibm1 = IBM1()
     ibm1.get_corpus(ENGLISH, FRENCH)
 
-    ibm1.fit(iterations=iterations, save=True)
+    #ibm1.fit(iterations=iterations, save=True)
 
     ibm1.load('IBM-9')
+
+    print(ibm1.Likelihood())
 
     print(ibm1.translate("the old cat"))
 
@@ -26,4 +28,6 @@ if __name__ == '__main__':
 
     ibm1.validation(ENGLISH_VAL, FRENCH_VAL)
 
-    aer.test('results/results.out')
+    aer.test_model(path_model='results/results.out')
+
+    ibm1.plot_alignments(ENGLISH_VAL, FRENCH_VAL)

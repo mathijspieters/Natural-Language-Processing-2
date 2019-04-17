@@ -64,3 +64,23 @@ class IBM2(IBM1):
                     theta_sum += self.gammas[x]*self.thetas[e].get(f, self.theta_0)
                 LL += np.log(theta_sum)
         return LL
+
+    def viterbi_alignment(self, source, target, split=True):
+        if split:
+            source = source.replace(" \n", "").split(" ")
+            target = target.replace(" \n", "").split(" ")
+
+        alignment_p = np.zeros(shape=(len(source),len(target)))
+
+        for i, word_source in enumerate(source):
+            for j, word_target in enumerate(target):
+                x = self.jump(i, j, source, target)
+                alignment_p[i,j] = self.gammas[x]*self.thetas[word_source].get(word_target, self.theta_0)
+
+        alignments_sum = np.sum(alignment_p, axis=1, keepdims=True)
+
+        alignment_p /= alignments_sum
+
+        alignments = np.argmax(alignment_p, axis=1)
+
+        return alignment_p, alignments

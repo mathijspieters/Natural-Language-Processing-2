@@ -24,16 +24,12 @@ if __name__ == '__main__':
 
     ibm.fit(iterations=iterations, save=True)
 
-    ibm.load('IBM-9')
-
     print(ibm.Likelihood())
 
     print(ibm.translate("the old cat"))
 
     alignments_matrix, alignment = ibm.viterbi_alignment('the black cat', 'le chat noir')
 
-    ibm.validation(ENGLISH_VAL, FRENCH_VAL)
-
-    aer.test_model(path_model='results/results.out')
+    print(ibm.aer())
 
     ibm.plot_alignments(ENGLISH_VAL, FRENCH_VAL)

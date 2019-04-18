@@ -8,6 +8,9 @@ import plot_alignment
 from IBM1 import IBM1
 
 class IBM2(IBM1):
+    def __init__(self):
+        IBM1.__init__(self, save_dir='model/IBM2/')
+        
     def jump(self, aj, j, E, F):
         """ Jump function from Vogel et al. (1996) """
         return aj - int(j*len(E)/len(F))

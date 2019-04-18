@@ -5,14 +5,22 @@ import numpy as np
 import utils
 import os
 import plot_alignment
+import aer
 
 class IBM1():
-    def __init__(self):
+    def __init__(self, save_dir='model/IBM1/'):
         self.corpus = None
         self.thetas = None
         self.theta_0 = None
-        self.save_dir = 'model'
+        self.save_dir = save_dir
+        self.english_val='data/validation/dev.e'
+        self.french_val='data/validation/dev.f'
+        self.path_true='data/validation/dev.wa.nonullalign'
 
+        if not os.path.exists(self.save_dir):
+            os.mkdir(self.save_dir)
+            print("Created dir: %s" % self.save_dir)
+        
     def get_corpus(self, e_path, f_path, l=-1):
         self.corpus = read_data(e_path, f_path)
         self.corpus.corpus = self.corpus.corpus[:l]
@@ -20,7 +28,7 @@ class IBM1():
 
     def save(self, name):
         doc = {'thetas': self.thetas, 'theta_0': self.theta_0}
-        utils.save(doc, os.path.join('model', name+'.pickle'))
+        utils.save(doc, os.path.join(self.save_dir, name+'.pickle'))
 
     def load(self, name):
         d = os.path.join(self.save_dir, name+'.pickle')
@@ -90,7 +98,7 @@ class IBM1():
 
         return " ".join(target)
 
-    def validation(self, e_path, f_path, save_file='results/results.out'):
+    def write_alignments(self, e_path, f_path, save_file='results/results.out'):
         validation_corpus = read_data(e_path, f_path)
 
         with open(save_file, 'w') as f:
@@ -126,3 +134,27 @@ class IBM1():
         alignments = np.argmax(alignment_p, axis=1)
 
         return alignment_p, alignments
+
+    def aer(self):
+        gold_sets = aer.read_naacl_alignments(self.path_true)
+
+        validation_corpus = read_data(self.english_val, self.french_val)
+
+        predictions = []
+
+        for E, F in validation_corpus.corpus:
+            values, _ = self.viterbi_alignment(E.s, F.s, split=False)
+            links = set()
+            for j in range(1, values.shape[0]):
+                winner = np.argwhere(values[j] == np.max(values[j])).flatten()
+                score = np.abs(winner-j)
+                best = winner[np.argmin(score)]
+                links.add((j,best+1))
+            predictions.append(links)
+
+        metric = aer.AERSufficientStatistics()
+        # then we iterate over the corpus
+        for gold, pred in zip(gold_sets, predictions):
+            metric.update(sure=gold[0], probable=gold[1], predicted=pred)
+ 
+        return metric.aer()

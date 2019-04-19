@@ -30,14 +30,16 @@ class IBM1():
         doc = {'thetas': self.thetas, 'theta_0': self.theta_0}
         utils.save(doc, os.path.join(self.save_dir, name+'.pickle'))
 
-    def load(self, name):
+    def load(self, name='IBM-9'):
         d = os.path.join(self.save_dir, name+'.pickle')
         if os.path.exists(d):
             doc = utils.load(d)
             self.thetas = doc['thetas']
             self.theta_0 = doc['theta_0']
+            print("Loaded %s" % d)
         else:
             raise Exception('No model at {}'.format(d))
+        
 
     def fit(self, iterations=10, save=False):
         if self.corpus is None:

@@ -53,9 +53,24 @@ class IBM2(IBM1):
                 self.gammas[x] = count_gamma[x]/sum(count_gamma)
 
             if save:
-                self.save('IBM2-%d' % i)
+                self.save('IBM-%d' % i)
 
         print("Log likelihood:", self.Likelihood())
+    
+    def save(self, name):
+        doc = {'thetas': self.thetas, 'theta_0': self.theta_0, 'gammas':self.gammas}
+        utils.save(doc, os.path.join(self.save_dir, name+'.pickle'))
+
+    def load(self, name='IBM-9'):
+        d = os.path.join(self.save_dir, name+'.pickle')
+        if os.path.exists(d):
+            doc = utils.load(d)
+            self.thetas = doc['thetas']
+            self.theta_0 = doc['theta_0']
+            self.gammas = doc['gammas']
+            print("Loaded %s" % d)
+        else:
+            raise Exception('No model at {}'.format(d))
 
     def Likelihood(self):
         LL = 0

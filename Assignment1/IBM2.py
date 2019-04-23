@@ -10,7 +10,7 @@ from IBM1 import IBM1
 class IBM2(IBM1):
     def __init__(self):
         IBM1.__init__(self, save_dir='model/IBM2/')
-        
+
     def jump(self, aj, j, E, F):
         """ Jump function from Vogel et al. (1996) """
         return aj - int(j*len(E)/len(F))
@@ -29,7 +29,7 @@ class IBM2(IBM1):
         L = self.corpus.get_L()
         self.gammas = {l: 1./(2*L + 1) for l in range(-L, L+1)}
         for i in range(iterations):
-            print("Log likelihood:", self.Likelihood())
+            # print("Log likelihood:", self.Likelihood())
             count_ef = Counter()
             count_e = Counter()
             count_gamma = Counter()
@@ -56,7 +56,7 @@ class IBM2(IBM1):
                 self.save('IBM-%d' % i)
 
         print("Log likelihood:", self.Likelihood())
-    
+
     def save(self, name):
         doc = {'thetas': self.thetas, 'theta_0': self.theta_0, 'gammas':self.gammas}
         utils.save(doc, os.path.join(self.save_dir, name+'.pickle'))

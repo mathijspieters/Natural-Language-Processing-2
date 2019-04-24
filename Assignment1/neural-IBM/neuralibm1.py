@@ -78,6 +78,8 @@ class NeuralIBM1Model:
     batch_size = tf.shape(self.x)[0]
     longest_x = tf.shape(self.x)[1]  # longest M
     longest_y = tf.shape(self.y)[1]  # longest N
+    print('longy2', longest_y)
+    
     
     # It's also useful to have masks that indicate what
     # values of our batch we should ignore.
@@ -172,7 +174,11 @@ class NeuralIBM1Model:
     
     #cross_entropy = ?
     # trf.reduce_mean?
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=py_x, labels=self.y))
+    print('longy', longest_y)
+    py_x = tf.reshape(py_x, [self.batch_size*longest_y, self.y_vocabulary_size])
+    self.y = tf.reshape(self.y, [-1], name='reshape_test')
+    print('shapes', self.batch_size, longest_y, self.y.shape, py_x.shape)
+    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=py_x, labels=self.y), axis=0)
     
 
     self.pa_x = pa_x

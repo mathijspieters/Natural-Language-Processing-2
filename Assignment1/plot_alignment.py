@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-def plot(alignments, words1, words2, title="test"):
+def plot(alignments, words1, words2, dir_, title="test"):
 
     fig, ax = plt.subplots(figsize=(12,12))
     im = ax.imshow(alignments)
@@ -29,6 +29,6 @@ def plot(alignments, words1, words2, title="test"):
     ax.set_title("Confusion matrix")
     plt.xlabel('French')
     plt.ylabel('English')
-    fig.savefig('results/%s.png' % title, dpi=300)
+    fig.savefig('%s/%s.png' % (dir_, title), dpi=300)
 
     plt.clf()

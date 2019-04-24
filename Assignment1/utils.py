@@ -1,5 +1,10 @@
 import pickle
 import os
+import collections
+
+def nested_dict():
+        return collections.defaultdict(nested_dict)
+
 
 def save(doc, name):
     path = os.getcwd()

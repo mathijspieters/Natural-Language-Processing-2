@@ -24,6 +24,7 @@ class IBM1():
     def get_corpus(self, e_path, f_path, l=-1):
         self.corpus = read_data(e_path, f_path)
         self.corpus.corpus = self.corpus.corpus[:l]
+        self.max_L = self.corpus.get_L()
         print("Loaded Corpus")
 
     def save(self, name):
@@ -39,21 +40,28 @@ class IBM1():
             print("Loaded %s" % d)
         else:
             raise Exception('No model at {}'.format(d))
-        
+
+    def initialize_parameters(self):
+        total_french_words = len(self.corpus.foreign_words)
+        self.theta_0 = 1/total_french_words
+        self.thetas = defaultdict(dict)
 
     def fit(self, iterations=10, save=False):
+        likelihoods = []
+        aers = []
+
         if self.corpus is None:
             print("Hey you forgot to give me something to work with")
             return
 
         print("Welcome to IBM1. Today, we'll be training for", iterations, "iterations. We wish you a pleasant journey.")
 
-        total_french_words = len(self.corpus.foreign_words)
-        self.theta_0 = 1/total_french_words
-
-        self.thetas = defaultdict(dict)
-        for i in range(iterations):
-            print("Log likelihood:", self.Likelihood())
+        for it in range(iterations):
+            likelihood = self.Likelihood()
+            aer = self.aer()
+            likelihoods.append(likelihood)
+            aers.append(aer)
+            print("%d   Log likelihood: %.4f     AER: %.4f " % (it, likelihood, aer))
             count_ef = Counter()
             count_e = Counter()
             for E, F in tqdm(self.corpus.corpus):
@@ -70,9 +78,17 @@ class IBM1():
                 self.thetas[e][f] = count_ef[(e,f)]/count_e[e]
 
             if save:
-                self.save('IBM-%d' % i)
+                self.save('IBM-%d' % it)
 
-        print("Log likelihood:", self.Likelihood())
+        likelihood = self.Likelihood()
+        aer = self.aer()
+        likelihoods.append(likelihood)
+        aers.append(aer)
+        print("%d   Log likelihood: %.4f     AER: %.4f " % (iterations, likelihood, aer))
+
+        with open(os.path.join(self.save_dir, 'results.csv'), 'w') as f:
+            for i, (aer, likelihood) in enumerate(zip(aers, likelihoods)):
+                f.write('%d,%.4f,%.4f\n' % (i,aer,likelihood))
 
     def Likelihood(self):
         LL = 0
@@ -116,7 +132,7 @@ class IBM1():
         validation_corpus = read_data(e_path, f_path)
         for i, (E, F) in enumerate(validation_corpus.corpus):
             alignment, _ = self.viterbi_alignment(E.s, F.s, split=False)
-            plot_alignment.plot(alignment, E.s, F.s, i)
+            plot_alignment.plot(alignment, E.s, F.s, self.save_dir, i)
 
     def viterbi_alignment(self, source, target, split=True):
         if split:

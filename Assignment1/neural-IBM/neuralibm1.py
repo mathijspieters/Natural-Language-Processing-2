@@ -176,9 +176,9 @@ class NeuralIBM1Model:
     # trf.reduce_mean?
     print('longy', longest_y)
     py_x = tf.reshape(py_x, [self.batch_size*longest_y, self.y_vocabulary_size])
-    self.y = tf.reshape(self.y, [-1], name='reshape_test')
-    print('shapes', self.batch_size, longest_y, self.y.shape, py_x.shape)
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=py_x, labels=self.y), axis=0)
+    y = tf.reshape(self.y, [-1], name='reshape_test')
+    print('shapes', self.batch_size, longest_y, y.shape, py_x.shape)
+    cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=py_x, labels=y), axis=0)
     
 
     self.pa_x = pa_x

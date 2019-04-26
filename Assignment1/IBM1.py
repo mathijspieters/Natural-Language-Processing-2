@@ -41,10 +41,26 @@ class IBM1():
         else:
             raise Exception('No model at {}'.format(d))
 
-    def initialize_parameters(self):
+    def initialize_parameters(self, smart=False):
         total_french_words = len(self.corpus.foreign_words)
         self.theta_0 = 1/total_french_words
         self.thetas = defaultdict(dict)
+
+        if smart:
+            count_e = dict()
+            for E, F in tqdm(self.corpus.corpus):
+                for e in E:
+                    for f in F:
+                        if e in count_e:
+                            count_e[e].add(f)
+                        else:
+                            count_e[e] = set([f])
+            
+            for e in tqdm(count_e.keys()):
+                L = 1./len(list(count_e[e]))
+                for f in count_e[e]:
+                    self.thetas[e][f] = L
+
 
     def fit(self, iterations=10, save=False):
         likelihoods = []

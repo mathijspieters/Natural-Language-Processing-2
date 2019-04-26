@@ -3,7 +3,8 @@ import tensorflow as tf
 import random
 from pprint import pprint
 from utils import iterate_minibatches, prepare_data, smart_reader, bitext_reader
-
+import csv
+import os
 
 class NeuralIBM1Trainer:
   """
@@ -120,12 +121,32 @@ class NeuralIBM1Trainer:
         epoch_steps += 1
         
         if batch_id % 100 == 0:
+          if not os.path.isfile('neural_ibm1_results_batch.csv'):
+            with open('neural_ibm1_results_batch.csv', 'w') as f:
+              writer = csv.writer(f)
+              writer.writerow(['epoch_id', 'loss', 'accuracy'])
+          
+          with open('neural_ibm1_results_batch.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow([epoch_id, res['loss'], batch_accuracy])   
+
+
           print("Iter {:5d} loss {:6f} accuracy {:1.2f} lr {:1.6f}".format(
             batch_id, res["loss"], batch_accuracy, lr_t))
 
       # evaluate on development set
       val_aer, val_acc = self.model.evaluate(self.dev_corpus, self.dev_wa)
-      
+     
+
+      if not os.path.isfile('neural_ibm1_results.csv'):
+        with open('neural_ibm1_results.csv', 'w') as f:
+          writer = csv.writer(f)
+          writer.writerow(['epoch_id', 'loss', 'accuracy', 'val_aer', 'val_acc'])
+
+      with open('neural_ibm1_results.csv', 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow([epoch_id, loss/float(epoch_steps),accuracy_correct/float(accuracy_total),val_aer,val_acc])   
+
       # print Epoch loss    
       print("Epoch {} loss {:6f} accuracy {:1.2f} val_aer {:1.2f} val_acc {:1.2f}".format(
           epoch_id, 

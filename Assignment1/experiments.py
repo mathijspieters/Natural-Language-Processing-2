@@ -19,7 +19,7 @@ def perform_experiment(initialization, use_jump, iterations=15):
     ibm.plot_alignments(ENGLISH_VAL, FRENCH_VAL)
 
 if __name__ == "__main__":
-    perform_experiment('IBM1', True)
+    # perform_experiment('IBM1', True)
     perform_experiment('uniform', True)
     perform_experiment('random', True)
     perform_experiment('random', True)

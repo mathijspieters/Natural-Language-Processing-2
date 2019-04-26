@@ -43,11 +43,14 @@ class NeuralIBM1Model:
     
   def _create_weights(self):
     """Create weights for the model."""
-    self.W_eh = tf.Variable(tf.random_normal([self.emb_dim, self.mlp_dim])) # (emb_dim, mlp_dim)
-    self.W_ho = tf.Variable(tf.random_normal([self.mlp_dim, self.y_vocabulary_size])) # (mlp_dim, y_vocabulary_size)
+    # self.W_eh = tf.Variable(tf.random_normal([self.emb_dim, self.mlp_dim])) # (emb_dim, mlp_dim)
+    # self.W_ho = tf.Variable(tf.random_normal([self.mlp_dim, self.y_vocabulary_size])) # (mlp_dim, y_vocabulary_size)
+    initializer = glorot_uniform()
+    self.W_eh = tf.Variable(initializer(shape=[self.emb_dim, self.mlp_dim])) # (emb_dim, mlp_dim)
+    self.W_ho = tf.Variable(initializer(shape=[self.mlp_dim, self.y_vocabulary_size])) # (mlp_dim, y_vocabulary_size)
     
-    self.b_h = tf.Variable(tf.random_normal([self.mlp_dim]))
-    self.b_o = tf.Variable(tf.random_normal([self.y_vocabulary_size]))
+    self.b_h = tf.Variable(tf.zeros([self.mlp_dim]))
+    self.b_o = tf.Variable(tf.zeros([self.y_vocabulary_size]))
     
     
   def save(self, session, path="model.ckpt"):
@@ -97,7 +100,7 @@ class NeuralIBM1Model:
     # i.e. the lengths are the same for each word y_1 .. y_N.
 #     lengths = x_mask * 1 / x_len # Shape: [B, ?]
 #     pa_x = # Shape: [B, ?]
-    lengths = tf.cast(1/x_len, tf.float32)
+    lengths = tf.cast(1 / x_len, tf.float32) #tf.cast(x_len, tf.float32), tf.float32)
 #     lengths = tf.tile(lengths, [lengths.shape[0], x_mask.shape[1]])
     pa_x = tf.multiply(tf.transpose(x_mask), lengths, name='element_wise_mul_lengths')
     pa_x = tf.transpose(pa_x)
@@ -132,12 +135,13 @@ class NeuralIBM1Model:
     print('bias', self.b_h.shape)
     
     h = tf.add(tf.matmul(mlp_input, self.W_eh), self.b_h)
-    h = tf.nn.relu(h)
+    # h = tf.nn.relu(h)
+    h = tf.nn.tanh(h)
     
     h = tf.add(tf.matmul(h, self.W_ho), self.b_o)
 
     # Now we perform a softmax which operates on a per-row basis.
-    py_xa = h # tf.nn.softmax(h)
+    py_xa = h #tf.nn.softmax(h, dim=1)
     print(py_xa)
     # einsum did not match dimensions
     py_xa = tf.reshape(py_xa, [batch_size, longest_x, self.y_vocabulary_size])
@@ -160,10 +164,13 @@ class NeuralIBM1Model:
     #
     # py_x = ?  # Shape: [B, N, Vy]
     print(pa_x.shape, py_xa.shape)
-    py_x = tf.einsum('bij,bkl->bil', pa_x, py_xa)
+    # py_x = tf.einsum('bij,bkl->bil', pa_x, py_xa)
+    py_x = tf.matmul(pa_x, py_xa)
 
+    py_x_sm = tf.nn.softmax(py_x)
+    
     # This calculates the accuracy, i.e. how many predictions we got right.
-    predictions = tf.argmax(py_x, axis=2)
+    predictions = tf.argmax(py_x_sm, axis=2)
     acc = tf.equal(predictions, self.y)
     acc = tf.cast(acc, tf.float32) * y_mask
     acc_correct = tf.reduce_sum(acc)
@@ -178,7 +185,11 @@ class NeuralIBM1Model:
     py_x = tf.reshape(py_x, [self.batch_size*longest_y, self.y_vocabulary_size])
     y = tf.reshape(self.y, [-1], name='reshape_test')
     print('shapes', self.batch_size, longest_y, y.shape, py_x.shape)
-    cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=py_x, labels=y), axis=0)
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=py_x, labels=y)
+
+    cross_entropy = tf.reshape(cross_entropy, [self.batch_size, longest_y])
+    cross_entropy = tf.reduce_sum(cross_entropy * y_mask, axis=1)
+    cross_entropy = tf.reduce_mean(cross_entropy, axis=0)
     
 
     self.pa_x = pa_x

@@ -1,8 +1,5 @@
-import os
-import numpy as np
 import torch
-from nltk.tree import Tree
-import torch.utils.data as data
+import nltk
 
 class Dataset(data.Dataset):
     def __init__(self, path, seq_length):

@@ -10,7 +10,6 @@ from torch.utils.data import DataLoader
 from dataset import Dataset
 from RNNLM import RNNLM
 
-
 def load_dataset(config):
     # Initialize the dataset and data loader (note the +1)
     dataset = Dataset('data', seq_length=30)
@@ -29,15 +28,12 @@ def train(config):
 
     for step, (batch_inputs, batch_targets, l) in enumerate(data_loader):
         optimizer.zero_grad()
-        batch_inputs = torch.stack(batch_inputs, dim=1).to(device)
-        batch_targets = torch.stack(batch_targets, dim=1).to(device)
+        batch_inputs = torch.stack(batch_inputs, dim=0).to(device)
+        batch_targets = torch.stack(batch_targets, dim=0).to(device)
 
-        print(l)
-
-        for b, t in zip(batch_inputs, batch_targets):
+        for b, t in zip(batch_inputs.t(), batch_targets.t()):
             print(dataset.convert_to_string(b.tolist()))
             print(dataset.convert_to_string(t.tolist()))
-
 
         break
 
@@ -85,3 +81,4 @@ if __name__ == '__main__':
     #     print(s)
 
     train(config)
+

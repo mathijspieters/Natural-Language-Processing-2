@@ -2,16 +2,16 @@ import torch
 import torch.nn as nn
 
 class Encoder(nn.Module):
-    def __init__(self, vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx):
+    def __init__(self, vocab_size, emb_size, hidden_size=256, z_dim=20, num_layers=1):
         super().__init__()
         self.hidden_size = hidden_size
 
-        self.embedder = nn.Embedding(vocab_size, emb_size, padding_idx=pad_idx)
+        self.embedder = nn.Embedding(vocab_size, emb_size)
         self.rnn = nn.GRU(input_size=emb_size, hidden_size=hidden_size,
             num_layers=num_layers, bidirectional=True)
-        self.rnn2hidden = nn.Linear(2*hidden_size, hidden_size)
-        self.hidden2mu = nn.Linear(hidden_size, latent_size)
-        self.hidden2sigma = nn.Linear(hidden_size, latent_size)
+        self.rnn = nn.Linear(2*hidden_size, hidden_size)
+        self.hidden2mu = nn.Linear(hidden_size, z_dim)
+        self.hidden2sigma = nn.Linear(hidden_size, z_dim)
 
         self.act = nn.Softplus()
         self.kl = None
@@ -19,17 +19,14 @@ class Encoder(nn.Module):
     def KL_div(self, mu, sigma):
         self.kl = -0.5*torch.mean(1 + sigma.log() - mu.pow(2) - sigma, dim=1)
 
-    def forward(self, input, lengths):
+    def forward(self, input):
         out = self.embedder(input)
-        out = nn.utils.rnn.pack_padded_sequence(out, lengths)
         out, _ = self.rnn(out)
-        out, _ = nn.utils.rnn.pad_packed_sequence(out)
 
-        fn = out[-1, :, 0:int(self.hidden_size)]
-        b1 = out[-1, :, int(self.hidden_size):2*self.hidden_size]
+        fn = out[-1, :, 0:int(self.hidden_size/2)]
+        b1 = out[0, :, int(self.hidden_size/2)+1:self.hidden_size]
 
-        h = torch.cat([fn, b1], dim=-1)
-        h = self.rnn2hidden(h)
+        h = torch.stack([fn, b1], dim=-1)
 
         mu = self.hidden2mu(h)
         sigma = self.act(self.hidden2sigma(h))

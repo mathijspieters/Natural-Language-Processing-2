@@ -18,7 +18,7 @@ class Decoder(nn.Module):
 
         self.sos_idx = sos_idx
 
-        
+
     def forward(self, z, seq_len):
         # [seq, batch]
         x0 = torch.ones(1, z.size(0))*self.sos_idx

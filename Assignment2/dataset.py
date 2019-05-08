@@ -1,5 +1,28 @@
 import torch
-import nltk
+import os
+import numpy as np
+
+from torch.utils import data
+from nltk.tree import Tree
+
+
+class PadSequence:
+    def __call__(self, batch):
+		# Let's assume that each element in "batch" is a tuple (data, label).
+        # Sort the batch in the descending order
+        inputs, targets = batch
+        print(inputs)
+        sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
+		# Get each sequence and pad it
+        sequences = [x[0] for x in sorted_batch]
+        sequences_padded = torch.nn.utils.rnn.pad_sequence(sequences)
+		# Also need to store the length of each sequence
+		# This is later needed in order to unpad the sequences
+        lengths = torch.LongTensor([len(x) for x in sequences])
+		# Don't forget to grab the labels of the *sorted* batch
+        labels = torch.LongTensor(map(lambda x: x[1], sorted_batch))
+        return sequences_padded, labels, lengths
+
 
 class Dataset(data.Dataset):
     def __init__(self, path, seq_length):
@@ -20,7 +43,7 @@ class Dataset(data.Dataset):
         self._word_to_ix = { ch:i for i,ch in enumerate(self._words)  }
         self._ix_to_word = { i:ch for i,ch in enumerate(self._words)  }
 
-        self._max_length = max([len(sample) for sample in self._data])
+        self._max_length = max([len(sample) for sample in self._data]) + 1
 
         self._offset = 0
         self.permute()
@@ -37,8 +60,8 @@ class Dataset(data.Dataset):
         targets = targets + [self._word_to_ix[self.EOS]]
         lengths = len(inputs)
 
-        inputs = inputs + [self._word_to_ix[self.UNK]] * (self._max_length - lengths)
-        targets = targets + [self._word_to_ix[self.UNK]] * (self._max_length - lengths)
+        inputs = inputs + [self._word_to_ix[self.PAD]] * (self._max_length - lengths)
+        targets = targets + [self._word_to_ix[self.PAD]] * (self._max_length - lengths)
 
         assert len(inputs) == self._max_length
 
@@ -47,7 +70,7 @@ class Dataset(data.Dataset):
             self.permute()
             self._index = 0
 
-        return inputs, targets, lengths
+        return inputs, targets
 
     def convert_to_string(self, word_ix):
         return ' '.join(self._ix_to_word[ix] for ix in word_ix)
@@ -67,6 +90,4 @@ class Dataset(data.Dataset):
             self._words |= set(sentence)
             tmp.append(sentence)
 
-            if i > 100:
-                break
         return tmp

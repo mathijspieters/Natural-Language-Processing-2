@@ -8,13 +8,14 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from dataset import Dataset
+from dataset import PadSequence
 from RNNLM import RNNLM
 
 
 def load_dataset(config):
     # Initialize the dataset and data loader (note the +1)
     dataset = Dataset('data', seq_length=30)
-    data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
+    data_loader = DataLoader(dataset, config.batch_size, num_workers=1, collate_fn=PadSequence())
     return dataset, data_loader
 
 def train(config):
@@ -22,21 +23,35 @@ def train(config):
     device = torch.device(config.device)
     dataset, data_loader = load_dataset(config)
 
-    model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.latent_size, config.num_layers)
+    model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.num_layers, dataset._word_to_ix[dataset.PAD])
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr=config.learning_rate)
 
-    for step, (batch_inputs, batch_targets, l) in enumerate(data_loader):
+    for step, (batch_inputs, batch_targets, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
         batch_inputs = torch.stack(batch_inputs, dim=0).to(device)
         batch_targets = torch.stack(batch_targets, dim=0).to(device)
 
-        for b, t in zip(batch_inputs.t(), batch_targets.t()):
-            print(dataset.convert_to_string(b.tolist()))
-            print(dataset.convert_to_string(t.tolist()))
+        predictions = model.forward(batch_inputs, lengths)
 
-        break
+        predicted_targets = predictions.argmax(dim=-1)
+
+        for b in predicted_targets.t():
+            print(dataset.convert_to_string(b.tolist()))
+
+        accuracy = (predicted_targets == batch_targets).float().mean()
+
+        predictions = predictions.view(-1, dataset.vocab_size)
+        batch_targets = batch_targets.view(-1)
+        
+        loss = criterion(predictions, batch_targets)
+
+        loss.backward()
+        optimizer.step()
+        print(loss.item())
+        print(accuracy)
+
 
 if __name__ == '__main__':
 

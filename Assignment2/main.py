@@ -26,13 +26,16 @@ def train(config):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr=config.learning_rate)
 
-    for step, (batch_inputs, batch_targets, tmp) in enumerate(data_loader):
+    for step, (batch_inputs, batch_targets, l) in enumerate(data_loader):
         optimizer.zero_grad()
-        batch_inputs = torch.stack(batch_inputs).to(device)
-        batch_targets = torch.stack(batch_targets).to(device)
+        batch_inputs = torch.stack(batch_inputs, dim=1).to(device)
+        batch_targets = torch.stack(batch_targets, dim=1).to(device)
 
-        for b in batch_inputs.t():
+        print(l)
+
+        for b, t in zip(batch_inputs, batch_targets):
             print(dataset.convert_to_string(b.tolist()))
+            print(dataset.convert_to_string(t.tolist()))
 
 
         break

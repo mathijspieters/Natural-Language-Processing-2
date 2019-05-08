@@ -34,17 +34,15 @@ class Dataset(data.Dataset):
         # offset = np.random.randint(0, len(self._data)-self._seq_length-2)
         inputs =  [self._word_to_ix[ch] for ch in self._data[self._indices[self._index]]]#[offset:offset+self._seq_length]]
         targets = [self._word_to_ix[ch] for ch in self._data[self._indices[self._index]]]#[offset+1:offset+self._seq_length+1]]
-
         inputs = [self._word_to_ix[self.SOS]] + inputs
         targets = targets + [self._word_to_ix[self.EOS]]
-
-        tmp = self._data[self._indices[self._index]]
 
         self._index += 1
         if self._index == self._data_size:
             self.permute()
             self._index = 0
-        return inputs, targets, tmp
+
+        return inputs, targets, len(inputs)
 
     def convert_to_string(self, word_ix):
         return ' '.join(self._ix_to_word[ix] for ix in word_ix)

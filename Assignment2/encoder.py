@@ -13,4 +13,4 @@ class Encoder(nn.Module):
 
     def forward(self, input):
         out = self.embedder(input)
-        
+        h = 

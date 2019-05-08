@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class Decoder(nn.Module):
+class RNNLM(nn.Module):
     def __init__(self, vocab_size, emb_size, hidden_size=256, z_dim=20, num_layers=1):
         super().__init__()
 

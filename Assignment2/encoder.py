@@ -15,12 +15,14 @@ class Encoder(nn.Module):
 
         self.act = nn.Softplus()
 
-    def forward(self, input):
+    def forward(self, input, lengths):
         out = self.embedder(input)
+        out = nn.utils.rnn.pack_padded_sequence(out, lengths)
         out, _ = self.rnn(out)
+        out, _ = nn.utils.rnn.pad_packed_sequence(out)
 
         fn = out[-1, :, 0:int(self.hidden_size)]
-        b1 = out[0, :, int(self.hidden_size):2*self.hidden_size]
+        b1 = out[-1, :, int(self.hidden_size):2*self.hidden_size]
 
         h = torch.cat([fn, b1], dim=-1)
         h = self.rnn2hidden(h)

@@ -11,9 +11,11 @@ class RNNLM(nn.Module):
         self.hidden2out = nn.Linear(hidden_size, latent_size)
         self.act = nn.Softmax(dim=-1)
 
-    def forward(self, input):
+    def forward(self, input, lengths):
         out = self.embedding(input)
+        out = nn.utils.rnn.pack_padded_sequence(out, lengths)
         out, _ = self.rnn(out)
+        out, _ = nn.utils.rnn.pad_packed_sequence(out)
         out = self.hidden2out(out)
         out = self.act(out)
         return out

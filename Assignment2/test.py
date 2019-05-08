@@ -22,3 +22,14 @@ from sent_vae import SentVAE
 #
 # print(b.size())
 # print(b)
+
+x = 2
+y = 3
+z = 5
+
+a = torch.rand(x, y, z)
+b = torch.randint(0, z, (x, y)).unsqueeze(-1)
+
+print(a)
+print(b)
+print(a.gather(dim=-1, index=b).size())

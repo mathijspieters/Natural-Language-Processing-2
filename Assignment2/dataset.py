@@ -23,6 +23,8 @@ class Dataset(data.Dataset):
         self._word_to_ix = { ch:i for i,ch in enumerate(self._words)  }
         self._ix_to_word = { i:ch for i,ch in enumerate(self._words)  }
 
+        self._max_length = max([len(sample) for sample in self._data])
+
         self._offset = 0
         self.permute()
         self._index = 0
@@ -36,13 +38,19 @@ class Dataset(data.Dataset):
         targets = [self._word_to_ix[ch] for ch in self._data[self._indices[self._index]]]#[offset+1:offset+self._seq_length+1]]
         inputs = [self._word_to_ix[self.SOS]] + inputs
         targets = targets + [self._word_to_ix[self.EOS]]
+        lengths = len(inputs)
+
+        inputs = inputs + [self._word_to_ix[self.UNK]] * (self._max_length - lengths)
+        targets = targets + [self._word_to_ix[self.UNK]] * (self._max_length - lengths)
+
+        assert len(inputs) == self._max_length
 
         self._index += 1
         if self._index == self._data_size:
             self.permute()
             self._index = 0
 
-        return inputs, targets, len(inputs)
+        return inputs, targets, lengths
 
     def convert_to_string(self, word_ix):
         return ' '.join(self._ix_to_word[ix] for ix in word_ix)

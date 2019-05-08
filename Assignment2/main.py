@@ -28,15 +28,12 @@ def train(config):
 
     for step, (batch_inputs, batch_targets, l) in enumerate(data_loader):
         optimizer.zero_grad()
-        batch_inputs = torch.stack(batch_inputs, dim=1).to(device)
-        batch_targets = torch.stack(batch_targets, dim=1).to(device)
+        batch_inputs = torch.stack(batch_inputs, dim=0).to(device)
+        batch_targets = torch.stack(batch_targets, dim=0).to(device)
 
-        print(l)
-
-        for b, t in zip(batch_inputs, batch_targets):
+        for b, t in zip(batch_inputs.t(), batch_targets.t()):
             print(dataset.convert_to_string(b.tolist()))
             print(dataset.convert_to_string(t.tolist()))
-
 
         break
 

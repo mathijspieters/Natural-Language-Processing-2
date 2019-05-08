@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 
 class Encoder(nn.Module):
-    def __init__(self, vocab_size, emb_size, hidden_size=256, latent_size=20, num_layers=1):
+    def __init__(self, vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx):
         super().__init__()
         self.hidden_size = hidden_size
 
-        self.embedder = nn.Embedding(vocab_size, emb_size)
+        self.embedder = nn.Embedding(vocab_size, emb_size, padding_idx=pad_idx)
         self.rnn = nn.GRU(input_size=emb_size, hidden_size=hidden_size,
             num_layers=num_layers, bidirectional=True)
         self.rnn2hidden = nn.Linear(2*hidden_size, hidden_size)

@@ -4,11 +4,11 @@ from encoder import Encoder
 from decoder import Decoder
 
 class SentVAE(nn.Module):
-    def __init__(self, vocab_size, emb_size, hidden_size, latent_size, num_layers=1):
+    def __init__(self, vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx, sos_idx):
         super().__init__()
 
-        self.encoder = Encoder(vocab_size, emb_size, hidden_size, latent_size, num_layers)
-        self.decoder = Decoder(vocab_size, emb_size, hidden_size, latent_size, num_layers)
+        self.encoder = Encoder(vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx)
+        self.decoder = Decoder(vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx, sos_idx)
 
     def forward(self, input):
         mu, sigma = self.encoder(input)

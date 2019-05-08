@@ -16,7 +16,6 @@ class Decoder(nn.Module):
         self.hidden2out = nn.Linear(hidden_size, vocab_size)
         self.act = nn.Softmax(dim=-1)
 
-        # Todo add as param.
         self.sos_idx = sos_idx
     def forward(self, z, seq_len):
         # [seq, batch]

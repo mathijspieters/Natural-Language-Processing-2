@@ -8,6 +8,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from dataset import Dataset
+from RNNLM import RNNLM
 
 def load_dataset(config):
     # Initialize the dataset and data loader (note the +1)
@@ -20,13 +21,21 @@ def train(config):
     device = torch.device(config.device)
     dataset, data_loader = load_dataset(config)
 
+    model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.latent_size, config.num_layers)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr=config.learning_rate)
 
-    for step, (batch_inputs, batch_targets) in enumerate(data_loader):
-        print(step)
+    for step, (batch_inputs, batch_targets, tmp) in enumerate(data_loader):
+        optimizer.zero_grad()
+        batch_inputs = torch.stack(batch_inputs).to(device)
+        batch_targets = torch.stack(batch_targets).to(device)
+
+        for b in batch_inputs.t():
+            print(dataset.convert_to_string(b.tolist()))
 
 
+        break
 
 if __name__ == '__main__':
 
@@ -34,8 +43,8 @@ if __name__ == '__main__':
 
     # Model params
     parser.add_argument('--seq_length', type=int, default=30, help='Length of an input sequence')
-    parser.add_argument('--lstm_num_hidden', type=int, default=128, help='Number of hidden units in the LSTM')
-    parser.add_argument('--lstm_num_layers', type=int, default=2, help='Number of LSTM layers in the model')
+    parser.add_argument('--num_hidden', type=int, default=128, help='Number of hidden units in the LSTM')
+    parser.add_argument('--num_layers', type=int, default=2, help='Number of LSTM layers in the model')
 
     # Training params
     parser.add_argument('--batch_size', type=int, default=64, help='Number of examples to process in a batch')
@@ -55,11 +64,14 @@ if __name__ == '__main__':
     parser.add_argument('--sample_every', type=int, default=100, help='How often to sample from the model')
 
     parser.add_argument('--generate', type=int, default=0)
-    parser.add_argument('--device', type=str, default='cuda')
+    parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--generated_output', type=str, default='generated_output.txt')
     parser.add_argument('--saved_model', type=str, default='model.pt')
     parser.add_argument('--temperature', type=float, default=0)
     parser.add_argument('--csv', type=str, default='model.csv')
+
+    parser.add_argument('--embedding_size', type=int, default=100)
+    parser.add_argument('--latent_size', type=int, default=20)
 
     config = parser.parse_args()
 

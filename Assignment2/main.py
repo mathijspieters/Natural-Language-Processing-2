@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from dataset import Dataset
 from RNNLM import RNNLM
 
+
 def load_dataset(config):
     # Initialize the dataset and data loader (note the +1)
     dataset = Dataset('data', seq_length=30)
@@ -81,4 +82,3 @@ if __name__ == '__main__':
     #     print(s)
 
     train(config)
-

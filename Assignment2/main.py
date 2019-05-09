@@ -24,6 +24,7 @@ def train(config):
     dataset, data_loader = load_dataset(config)
 
     model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.num_layers, dataset.word_2_idx(dataset.PAD))
+    model.to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
@@ -32,6 +33,7 @@ def train(config):
         optimizer.zero_grad()
         batch_inputs = batch_inputs.t().to(device)
         batch_targets = batch_targets.t().to(device)
+        masks = masks.to(device)
 
         predictions = model.forward(batch_inputs, lengths)
 
@@ -44,7 +46,7 @@ def train(config):
         predictions = predictions.view(-1, dataset.vocab_size)
         batch_targets = batch_targets.contiguous()
         batch_targets = batch_targets.view(-1)
-        
+
         loss = criterion(predictions, batch_targets)
 
         loss.backward()
@@ -52,7 +54,7 @@ def train(config):
 
         if step % config.print_every == 0:
             print("Accuracy: %.3f   Loss: %.3f" % (accuracy.item(), loss.item()))
-        
+
         if step % config.sample_every == 0:
             data_loader.print_batch(predicted_targets.t())
 

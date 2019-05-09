@@ -41,7 +41,6 @@ def train(config):
 
     model = SentVAE(dataset.vocab_size, config.embedding_size, config.num_hidden, config.latent_size, config.num_layers, dataset.word_2_idx(dataset.PAD), dataset.word_2_idx(dataset.SOS))
 
-    criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     loss_sum, loss_kl_sum, loss_ce_sum, accuracy_sum  = 0, 0, 0, 0
@@ -55,7 +54,7 @@ def train(config):
 
         predicted_targets = predictions.argmax(dim=-1)
 
-        accuracy = (predicted_targets[:,masks] == batch_targets[:,masks]).float().mean()
+        accuracy = (predicted_targets[masks.t()] == batch_targets[masks.t()]).float().mean()
         
         ce_loss = CE(predictions, batch_targets, masks.t())
         kl_loss = KL(mu, sigma)

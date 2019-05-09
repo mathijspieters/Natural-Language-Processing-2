@@ -51,7 +51,7 @@ def train(config):
 
         predicted_targets = predictions.argmax(dim=-1)
 
-        accuracy = (predicted_targets[:,masks] == batch_targets[:,masks]).float().mean()
+        accuracy = (predicted_targets[masks.t()] == batch_targets[masks.t()]).float().mean()
 
         loss = CE(predictions, batch_targets, masks)
 
@@ -62,8 +62,8 @@ def train(config):
         accuracy_sum += accuracy.item()
 
         if step % config.print_every == 0:
-            print("STEP %4d     Accuracy: %.3f   CE-loss: %.3f " %\
-                (step, accuracy_sum/config.print_every, loss_ce_sum/config.print_every))
+            print("Epoch: %2d   STEP %4d      Accuracy: %.3f   CE-loss: %.3f " %\
+                (data_loader.epoch, step, accuracy_sum/config.print_every, loss_ce_sum/config.print_every))
 
             loss_ce_sum, accuracy_sum  = 0, 0
 

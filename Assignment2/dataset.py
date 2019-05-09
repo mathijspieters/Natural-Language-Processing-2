@@ -52,6 +52,7 @@ class DataLoader:
         self._data_size = len(self.dataset)
         self.permute()
         self.index = 0
+        self.epoch = 0
         self.batch_size = batch_size
 
     def __getitem__(self, item):
@@ -63,6 +64,7 @@ class DataLoader:
 
         if self.index + self.batch_size > self._data_size:
             self.index = 0
+            self.epoch += 1
             self.permute()
 
         tokens = [[self.dataset.word_2_idx(w) for w in sentence] for sentence in data]

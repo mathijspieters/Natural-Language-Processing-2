@@ -33,6 +33,8 @@ class Dataset(data.Dataset):
             sentence = t.leaves()
             self._words |= set(sentence)
             tmp.append(sentence)
+            if i > 100:
+                break
         return tmp
 
     def create_vocabulary(self):

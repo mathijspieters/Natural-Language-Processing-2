@@ -8,14 +8,13 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from dataset import Dataset
-from dataset import PadSequence
 from RNNLM import RNNLM
 
 
 def load_dataset(config):
     # Initialize the dataset and data loader (note the +1)
     dataset = Dataset('data', seq_length=30)
-    data_loader = DataLoader(dataset, config.batch_size, num_workers=1, collate_fn=PadSequence())
+    data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
     return dataset, data_loader
 
 def train(config):

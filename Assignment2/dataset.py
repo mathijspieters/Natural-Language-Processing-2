@@ -6,23 +6,95 @@ from torch.utils import data
 from nltk.tree import Tree
 
 
-class PadSequence:
-    def __call__(self, batch):
-		# Let's assume that each element in "batch" is a tuple (data, label).
-        # Sort the batch in the descending order
-        inputs, targets = batch
-        print(inputs)
-        sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
-		# Get each sequence and pad it
-        sequences = [x[0] for x in sorted_batch]
-        sequences_padded = torch.nn.utils.rnn.pad_sequence(sequences)
-		# Also need to store the length of each sequence
-		# This is later needed in order to unpad the sequences
-        lengths = torch.LongTensor([len(x) for x in sequences])
-		# Don't forget to grab the labels of the *sorted* batch
-        labels = torch.LongTensor(map(lambda x: x[1], sorted_batch))
-        return sequences_padded, labels, lengths
+class Dataset(data.Dataset):
+    def __init__(self, path):
+        self.SOS = '<SOS>'
+        self.EOS = '<EOS>'
+        self.PAD = '<PAD>'
+        self.UNK= '<UNK>'
+        self._words = set([self.SOS, self.EOS, self.PAD, self.UNK])
+        self.data = open(os.path.join(path, "02-21.10way.clean"), "r")
+        self.data = self.process(self.data)
+        self._word_2_idx = {}
+        self._idx_2_word = {}
+        self.create_vocabulary()
+        
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        return self.data[index]
 
+    def process(self, data):
+        tmp = []
+        for i, d in enumerate(data.readlines()):
+            t = Tree.fromstring(d)
+            sentence = t.leaves()
+            self._words |= set(sentence)
+            tmp.append(sentence)
+            if i > 100:
+                break
+        return tmp
+
+    def create_vocabulary(self):
+        self._word_2_idx = dict(zip(list(self._words), range(len(list(self._words)))))
+        self._idx_2_word = {self._word_2_idx[word]:word for word in self._word_2_idx.keys()}
+
+    def word_2_idx(self, word):
+        return self._word_2_idx[word] if word in self._word_2_idx else self._word_2_idx[self.UNK]
+
+    def idx_2_word(self, idx):
+        return self._idx_2_word[idx] if idx in self._idx_2_word else self.UNK
+
+
+class DataLoader:
+    def __init__(self, dataset, batch_size=8):
+        self.dataset = dataset
+        self._data_size = len(self.dataset)
+        self.permute()
+        self.index = 0
+        self.batch_size = batch_size
+
+    def __getitem__(self, item):
+        SOS = self.dataset.word_2_idx(self.dataset.SOS)
+        EOS = self.dataset.word_2_idx(self.dataset.EOS)
+        PAD = self.dataset.word_2_idx(self.dataset.PAD)
+        data = [self.dataset[idx] for idx in self._indices[self.index:self.index+self.batch_size]]
+        self.index = self.index + self.batch_size
+
+        if self.index + self.batch_size > self._data_size:
+            self.index = 0
+            self.permute()
+
+        tokens = [[self.dataset.word_2_idx(w) for w in sentence] for sentence in data]
+
+        lengths = [len(sentence)+1 for sentence in tokens]
+        max_length = max(lengths)
+
+        inputs = [[SOS]+sentence for sentence in tokens]
+        inputs = [sentence+[PAD]*(max_length-len(sentence)) for sentence in inputs]
+
+        outputs = [sentence+[EOS] for sentence in tokens]
+        outputs = [sentence+[PAD]*(max_length-len(sentence)) for sentence in outputs]
+
+        inputs = torch.tensor(inputs)
+        outputs = torch.tensor(outputs)
+        seq_mask = (inputs != PAD)
+        seq_length = torch.tensor(lengths)
+
+        return inputs, outputs, seq_mask, seq_length
+
+    def permute(self):
+        self._indices = np.random.permutation(self._data_size)
+
+    def print_batch(self, batch):
+        for sentence in batch:
+            print(" ".join([self.dataset.idx_2_word(w) for w in sentence.tolist()]))
+
+
+
+
+"""
 
 class Dataset(data.Dataset):
     def __init__(self, path, seq_length):
@@ -82,12 +154,5 @@ class Dataset(data.Dataset):
     def vocab_size(self):
         return self._vocab_size
 
-    def process(self, data, train=False):
-        tmp = []
-        for i, d in enumerate(data.readlines()):
-            t = Tree.fromstring(d)
-            sentence = t.leaves()
-            self._words |= set(sentence)
-            tmp.append(sentence)
-
-        return tmp
+    
+"""

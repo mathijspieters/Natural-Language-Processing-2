@@ -19,9 +19,9 @@ class Decoder(nn.Module):
         self.sos_idx = sos_idx
 
 
-    def forward(self, z, seq_len):
+    def forward(self, x, z, seq_len):
         # [seq, batch]
-        x0 = torch.ones(1, z.size(0))*self.sos_idx
+        #x0 = torch.ones(1, z.size(0))*self.sos_idx
 
         # hidden = [batch_size, num_layers*hidden_size]
         hidden = self.z_act(self.z2hidden(z))
@@ -30,16 +30,37 @@ class Decoder(nn.Module):
         # hidden = [num_layers, batch_size, hidden_size]
         hidden = hidden.transpose(0, 1)
 
+        out = self.embedder(x)
+        out = nn.utils.rnn.pack_padded_sequence(out, seq_len)
+        out, _ = self.rnn(out, hidden)
+        out, _ = nn.utils.rnn.pad_packed_sequence(out)
+
+        out = self.hidden2out(out)
+        out = self.act(out)
+
+        return out
+
+
+    def generate(self, x, z, seq_len):
+        hidden = self.z_act(self.z2hidden(z))
+        # hidden = [batch_size, num_layers, hidden_size]
+        hidden = hidden.reshape(hidden.size(0), self.num_layers, self.hidden_size)
+        # hidden = [num_layers, batch_size, hidden_size]
+        hidden = hidden.transpose(0, 1)
+
         sent = None
 
-        for t in range(seq_len):
-            out = self.embedder(x0.long())
-            out, hidden = self.rnn(out, hidden)
+        out = x
+
+        for _ in range(seq_len):
+            input_ = self.embedder(out)
+            out, hidden = self.rnn(input_, hidden)
             out = self.hidden2out(out)
             out = self.act(out)
-            x0 = torch.ones(1, z.size(0))*out.argmax(dim=-1).float()
+            out = out.argmax(dim=-1)
             if sent is None:
                 sent = out
             else:
                 sent = torch.cat([sent, out], dim=0)
         return sent
+

@@ -17,6 +17,18 @@ def load_dataset(config):
     data_loader = DataLoader(dataset, batch_size=config.batch_size)
     return dataset, data_loader
 
+def CE(predictions, targets, masks):
+    targets = targets.contiguous().view(-1)
+    predictions = predictions.view(-1, predictions.shape[-1])
+    masks = masks.contiguous().view(-1).float()
+
+    nb_tokens = torch.sum(masks)
+
+    Y_hat = predictions[range(predictions.shape[0]), targets] * masks
+    ce_loss = -torch.sum(Y_hat) / nb_tokens
+
+    return ce_loss
+
 def train(config):
 
     device = torch.device(config.device)
@@ -25,8 +37,9 @@ def train(config):
     model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.num_layers, dataset.word_2_idx(dataset.PAD))
     model.to(device)
 
-    criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+
+    loss_ce_sum, accuracy_sum  = 0, 0
 
     for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
@@ -40,19 +53,19 @@ def train(config):
 
         accuracy = (predicted_targets[:,masks] == batch_targets[:,masks]).float().mean()
 
-        batch_targets = batch_targets * masks.t()
-
-        predictions = predictions.view(-1, dataset.vocab_size)
-        batch_targets = batch_targets.contiguous()
-        batch_targets = batch_targets.view(-1)
-
-        loss = criterion(predictions, batch_targets)
+        loss = CE(predictions, batch_targets, masks)
 
         loss.backward()
         optimizer.step()
 
+        loss_ce_sum += loss.item()
+        accuracy_sum += accuracy.item()
+
         if step % config.print_every == 0:
-            print("Accuracy: %.3f   Loss: %.3f" % (accuracy.item(), loss.item()))
+            print("STEP %4d     Accuracy: %.3f   CE-loss: %.3f " %\
+                (step, accuracy_sum/config.print_every, loss_ce_sum/config.print_every))
+
+            loss_ce_sum, accuracy_sum  = 0, 0
 
         if step % config.sample_every == 0:
             data_loader.print_batch(predicted_targets.t())

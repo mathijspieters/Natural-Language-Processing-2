@@ -18,9 +18,21 @@ def load_dataset(config):
     return dataset, data_loader
 
 
-def KL(mu, sigma, eps=10-6):
-    loss = 0.5 * torch.mean(sigma + mu.pow(2) - (sigma+eps).log() - 1)
-    return loss 
+def KL(mu, sigma):
+    loss = -0.5 * torch.mean(1 + sigma.log() - mu.pow(2) - sigma)
+    return loss
+
+def CE(predictions, targets, masks):
+    targets = targets.contiguous().view(-1)
+    predictions = predictions.view(-1, predictions.shape[-1])
+    masks = masks.contiguous().view(-1).float()
+
+    nb_tokens = torch.sum(masks)
+
+    Y_hat = predictions[range(predictions.shape[0]), targets] * masks
+    ce_loss = -torch.sum(Y_hat) / nb_tokens
+
+    return ce_loss
 
 def train(config):
 
@@ -32,6 +44,8 @@ def train(config):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
+    loss_sum, loss_kl_sum, loss_ce_sum, accuracy_sum  = 0, 0, 0, 0
+
     for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
         batch_inputs = batch_inputs.t().to(device)
@@ -42,14 +56,8 @@ def train(config):
         predicted_targets = predictions.argmax(dim=-1)
 
         accuracy = (predicted_targets[:,masks] == batch_targets[:,masks]).float().mean()
-
-        batch_targets = batch_targets * masks.t()
-
-        predictions = predictions.view(-1, dataset.vocab_size)
-        batch_targets = batch_targets.contiguous()
-        batch_targets = batch_targets.view(-1)
         
-        ce_loss = criterion(predictions, batch_targets)
+        ce_loss = CE(predictions, batch_targets, masks.t())
         kl_loss = KL(mu, sigma)
 
         loss = ce_loss + kl_loss
@@ -57,10 +65,20 @@ def train(config):
         loss.backward()
         optimizer.step()
 
+        loss_sum += loss.item()
+        loss_kl_sum += kl_loss.item()
+        loss_ce_sum += ce_loss.item()
+        accuracy_sum += accuracy.item()
+
         if step % config.print_every == 0:
-            print("Accuracy: %.3f   Loss: %.3f" % (accuracy.item(), loss.item()))
-        
+            print("STEP %4d     Accuracy: %.3f   Total-loss: %.3f    CE-loss: %.3f   KL-loss: %.3f" %\
+                (step, accuracy_sum/config.print_every, loss_sum/config.print_every, loss_ce_sum/config.print_every, loss_kl_sum/config.print_every))
+
+            loss_sum, loss_kl_sum, loss_ce_sum, accuracy_sum  = 0, 0, 0, 0
+
         if step % config.sample_every == 0:
+            sample = model.sample()
+            data_loader.print_batch(sample.t())
             data_loader.print_batch(predicted_targets.t())
 
 

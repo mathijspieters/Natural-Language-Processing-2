@@ -5,16 +5,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 
 from dataset import Dataset
+from dataset import DataLoader
+
 from RNNLM import RNNLM
 
 
 def load_dataset(config):
     # Initialize the dataset and data loader (note the +1)
-    dataset = Dataset('data', seq_length=30)
-    data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
+    dataset = Dataset('data')
+    data_loader = DataLoader(dataset, batch_size=config.batch_size)
     return dataset, data_loader
 
 def train(config):
@@ -22,34 +23,38 @@ def train(config):
     device = torch.device(config.device)
     dataset, data_loader = load_dataset(config)
 
-    model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.num_layers, dataset._word_to_ix[dataset.PAD])
+    model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.num_layers, dataset.word_2_idx(dataset.PAD))
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=config.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
-    for step, (batch_inputs, batch_targets, lengths) in enumerate(data_loader):
+    for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
-        batch_inputs = torch.stack(batch_inputs, dim=0).to(device)
-        batch_targets = torch.stack(batch_targets, dim=0).to(device)
+        batch_inputs = batch_inputs.t().to(device)
+        batch_targets = batch_targets.t().to(device)
 
         predictions = model.forward(batch_inputs, lengths)
 
         predicted_targets = predictions.argmax(dim=-1)
 
-        for b in predicted_targets.t():
-            print(dataset.convert_to_string(b.tolist()))
+        accuracy = (predicted_targets[:,masks] == batch_targets[:,masks]).float().mean()
 
-        accuracy = (predicted_targets == batch_targets).float().mean()
+        batch_targets = batch_targets * masks.t()
 
         predictions = predictions.view(-1, dataset.vocab_size)
+        batch_targets = batch_targets.contiguous()
         batch_targets = batch_targets.view(-1)
         
         loss = criterion(predictions, batch_targets)
 
         loss.backward()
         optimizer.step()
-        print(loss.item())
-        print(accuracy)
+
+        if step % config.print_every == 0:
+            print("Accuracy: %.3f   Loss: %.3f" % (accuracy.item(), loss.item()))
+        
+        if step % config.sample_every == 0:
+            data_loader.print_batch(predicted_targets.t())
 
 
 if __name__ == '__main__':
@@ -62,8 +67,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_layers', type=int, default=2, help='Number of LSTM layers in the model')
 
     # Training params
-    parser.add_argument('--batch_size', type=int, default=64, help='Number of examples to process in a batch')
-    parser.add_argument('--learning_rate', type=float, default=2e-3, help='Learning rate')
+    parser.add_argument('--batch_size', type=int, default=8, help='Number of examples to process in a batch')
+    parser.add_argument('--learning_rate', type=float, default=2e-2, help='Learning rate')
 
     # It is not necessary to implement the following three params, but it may help training.
     parser.add_argument('--learning_rate_decay', type=float, default=0.96, help='Learning rate decay fraction')
@@ -75,8 +80,8 @@ if __name__ == '__main__':
 
     # Misc params
     parser.add_argument('--summary_path', type=str, default="./summaries/", help='Output path for summaries')
-    parser.add_argument('--print_every', type=int, default=5, help='How often to print training progress')
-    parser.add_argument('--sample_every', type=int, default=100, help='How often to sample from the model')
+    parser.add_argument('--print_every', type=int, default=50, help='How often to print training progress')
+    parser.add_argument('--sample_every', type=int, default=1000, help='How often to sample from the model')
 
     parser.add_argument('--generate', type=int, default=0)
     parser.add_argument('--device', type=str, default='cpu')

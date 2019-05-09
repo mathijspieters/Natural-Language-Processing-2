@@ -18,7 +18,8 @@ class Dataset(data.Dataset):
         self._word_2_idx = {}
         self._idx_2_word = {}
         self.create_vocabulary()
-        
+        self.vocab_size = len(list(self._words))
+
     def __len__(self):
         return len(self.data)
     
@@ -32,8 +33,6 @@ class Dataset(data.Dataset):
             sentence = t.leaves()
             self._words |= set(sentence)
             tmp.append(sentence)
-            if i > 100:
-                break
         return tmp
 
     def create_vocabulary(self):
@@ -68,8 +67,13 @@ class DataLoader:
 
         tokens = [[self.dataset.word_2_idx(w) for w in sentence] for sentence in data]
 
-        lengths = [len(sentence)+1 for sentence in tokens]
+        lengths = np.array([len(sentence)+1 for sentence in tokens])
         max_length = max(lengths)
+
+        idx_sorted = np.argsort(lengths)[::-1]
+
+        lengths = lengths[idx_sorted]
+        tokens = [tokens[idx] for idx in idx_sorted]
 
         inputs = [[SOS]+sentence for sentence in tokens]
         inputs = [sentence+[PAD]*(max_length-len(sentence)) for sentence in inputs]
@@ -79,7 +83,7 @@ class DataLoader:
 
         inputs = torch.tensor(inputs)
         outputs = torch.tensor(outputs)
-        seq_mask = (inputs != PAD)
+        seq_mask = (inputs != PAD).long()
         seq_length = torch.tensor(lengths)
 
         return inputs, outputs, seq_mask, seq_length

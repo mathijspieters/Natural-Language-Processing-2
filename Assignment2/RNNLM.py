@@ -12,15 +12,8 @@ class RNNLM(nn.Module):
         self.act = nn.Softmax(dim=-1)
 
     def forward(self, input, lengths):
-
         out = self.embedding(input)
-
-        print(out.size())
         out = nn.utils.rnn.pack_padded_sequence(out, lengths)
-
-        print(out.data.size())
-        print(lengths.sum())
-
         out, _ = self.rnn(out)
         out, _ = nn.utils.rnn.pad_packed_sequence(out)
         out = self.hidden2out(out)

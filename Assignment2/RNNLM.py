@@ -37,7 +37,7 @@ class RNNLM(nn.Module):
                 out = self.hidden2out(out)
                 out = self.act(out)
                 out = out.argmax(dim=-1)
-                sent = torch.cat([sent, out], dim=0)
+                sent = torch.cat([sent, out], dim=1)
 
         return sent
 

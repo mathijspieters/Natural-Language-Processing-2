@@ -73,7 +73,7 @@ def train(config):
             data_loader.print_batch(batch_targets.t())
             print()
             sample = model.sample(dataset.word_2_idx(dataset.SOS), 30)
-            data_loader.print_batch(sample.t())
+            data_loader.print_batch(sample)
 
 
 if __name__ == '__main__':

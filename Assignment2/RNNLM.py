@@ -9,7 +9,7 @@ class RNNLM(nn.Module):
         self.rnn = nn.LSTM(input_size=emb_size, hidden_size=hidden_size,
             num_layers=num_layers)
         self.hidden2out = nn.Linear(hidden_size, vocab_size)
-        self.act = nn.Softmax(dim=-1)
+        self.act = nn.Softmax(dim=0)
 
     def forward(self, input, lengths):
         out = self.embedding(input)
@@ -19,3 +19,25 @@ class RNNLM(nn.Module):
         out = self.hidden2out(out)
         out = self.act(out)
         return out
+
+    def sample(self, SOS, seq_len, batch_size=8):
+        with torch.no_grad():
+            out = torch.ones(batch_size, 1, dtype=torch.long).fill_(SOS)
+
+            input_ = self.embedding(out)
+            out, hidden = self.rnn(input_)
+            out = self.hidden2out(out)
+            out = self.act(out)
+            out = out.argmax(dim=-1)
+            sent = out
+
+            for _ in range(seq_len-1):
+                input_ = self.embedding(out)
+                out, hidden = self.rnn(input_, hidden)
+                out = self.hidden2out(out)
+                out = self.act(out)
+                out = out.argmax(dim=-1)
+                sent = torch.cat([sent, out], dim=0)
+
+        return sent
+

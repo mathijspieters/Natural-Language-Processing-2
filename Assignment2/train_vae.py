@@ -78,6 +78,7 @@ def train(config):
         if step % config.sample_every == 0:
             sample = model.sample()
             data_loader.print_batch(sample.t())
+            print()
             data_loader.print_batch(predicted_targets.t())
 
 

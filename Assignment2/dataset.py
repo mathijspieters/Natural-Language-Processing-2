@@ -96,6 +96,7 @@ class DataLoader:
     def print_batch(self, batch):
         for sentence in batch:
             print(" ".join([self.dataset.idx_2_word(w) for w in sentence.tolist()]))
+            print()
 
 
 

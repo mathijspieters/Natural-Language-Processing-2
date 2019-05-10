@@ -14,7 +14,7 @@ class Decoder(nn.Module):
         self.rnn = nn.GRU(input_size=emb_size, hidden_size=hidden_size,
             num_layers=num_layers)
         self.hidden2out = nn.Linear(hidden_size, vocab_size)
-        self.act = nn.Softmax(dim=-1)
+        self.act = nn.Softmax(dim=0)
 
         self.sos_idx = sos_idx
 
@@ -47,7 +47,6 @@ class Decoder(nn.Module):
         hidden = hidden.reshape(hidden.size(0), self.num_layers, self.hidden_size)
         # hidden = [num_layers, batch_size, hidden_size]
         hidden = hidden.transpose(0, 1)
-
         sent = None
 
         out = x

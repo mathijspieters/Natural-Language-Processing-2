@@ -20,9 +20,10 @@ class SentVAE(nn.Module):
         return out, mu, sigma
 
     def sample(self, n_samples=10, std=1):
-        z = torch.normal(torch.zeros((n_samples, self.latent_size)))
-        start_input = torch.ones(1, n_samples, dtype=torch.long).fill_(self.SOS)
+        with torch.no_grad():
+            z = std*torch.normal(torch.zeros((n_samples, self.latent_size)))
+            start_input = torch.ones(1, n_samples, dtype=torch.long).fill_(self.SOS)
 
-        out = self.decoder.generate(start_input, z, 30)
+            out = self.decoder.generate(start_input, z, 30)
 
         return out

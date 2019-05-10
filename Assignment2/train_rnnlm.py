@@ -69,6 +69,11 @@ def train(config):
 
         if step % config.sample_every == 0:
             data_loader.print_batch(predicted_targets.t())
+            print()
+            data_loader.print_batch(batch_targets.t())
+            print()
+            sample = model.sample(dataset.word_2_idx(dataset.SOS), 30)
+            data_loader.print_batch(sample.t())
 
 
 if __name__ == '__main__':
@@ -81,7 +86,7 @@ if __name__ == '__main__':
 
     # Training params
     parser.add_argument('--batch_size', type=int, default=8, help='Number of examples to process in a batch')
-    parser.add_argument('--learning_rate', type=float, default=2e-2, help='Learning rate')
+    parser.add_argument('--learning_rate', type=float, default=2e-3, help='Learning rate')
 
     # It is not necessary to implement the following three params, but it may help training.
     parser.add_argument('--learning_rate_decay', type=float, default=0.96, help='Learning rate decay fraction')

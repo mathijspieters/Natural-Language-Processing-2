@@ -1,20 +1,31 @@
 import torch
 import os
 import numpy as np
+from collections import Counter
+import string
 
 from torch.utils import data
 from nltk.tree import Tree
+from torch.autograd import Variable
 
 
 class Dataset(data.Dataset):
-    def __init__(self, path):
+    def __init__(self, path, file_="02-21.10way.clean", sorted_words=None):
         self.SOS = '<SOS>'
         self.EOS = '<EOS>'
         self.PAD = '<PAD>'
         self.UNK= '<UNK>'
+        self.count = Counter()
         self._words = set([self.SOS, self.EOS, self.PAD, self.UNK])
-        self.data = open(os.path.join(path, "02-21.10way.clean"), "r")
+        self.data = open(os.path.join(path, file_), "r")
         self.data = self.process(self.data)
+        self._words |= set([word for (word, count) in self.count.most_common(10000)])
+
+        if sorted_words == None:
+            self.sorted_words = sorted(list(self._words))
+        else:
+            self.sorted_words = sorted_words
+        self._words = self.sorted_words
         self._word_2_idx = {}
         self._idx_2_word = {}
         self.create_vocabulary()
@@ -28,10 +39,13 @@ class Dataset(data.Dataset):
 
     def process(self, data):
         tmp = []
+        punctuation = string.punctuation
         for i, d in enumerate(data.readlines()):
             t = Tree.fromstring(d)
             sentence = t.leaves()
-            self._words |= set(sentence)
+            sentence = [w.lower() for w in sentence]
+            sentence = [w for w in sentence if w not in punctuation]
+            self.count += Counter(sentence)
             tmp.append(sentence)
         return tmp
 
@@ -98,68 +112,3 @@ class DataLoader:
             print(" ".join([self.dataset.idx_2_word(w) for w in sentence.tolist()]))
             print()
 
-
-
-
-"""
-
-class Dataset(data.Dataset):
-    def __init__(self, path, seq_length):
-        self.SOS = '<SOS>'
-        self.EOS = '<EOS>'
-        self.PAD = '<PAD>'
-        self.UNK= '<UNK>'
-        self._words = set([self.SOS, self.EOS, self.PAD, self.UNK])
-
-        self._seq_length = seq_length
-
-        self._data = open(os.path.join(path, "02-21.10way.clean"), "r")
-        self._data = self.process(self._data)
-        self._words = sorted(list(self._words))
-
-        self._data_size, self._vocab_size = len(self._data), len(self._words)
-
-        self._word_to_ix = { ch:i for i,ch in enumerate(self._words)  }
-        self._ix_to_word = { i:ch for i,ch in enumerate(self._words)  }
-
-        self._max_length = max([len(sample) for sample in self._data]) + 1
-
-        self._offset = 0
-        self.permute()
-        self._index = 0
-
-    def permute(self):
-        self._indices = np.random.permutation(self._data_size)
-
-    def __getitem__(self, item):
-        # offset = np.random.randint(0, len(self._data)-self._seq_length-2)
-        inputs =  [self._word_to_ix[ch] for ch in self._data[self._indices[self._index]]]#[offset:offset+self._seq_length]]
-        targets = [self._word_to_ix[ch] for ch in self._data[self._indices[self._index]]]#[offset+1:offset+self._seq_length+1]]
-        inputs = [self._word_to_ix[self.SOS]] + inputs
-        targets = targets + [self._word_to_ix[self.EOS]]
-        lengths = len(inputs)
-
-        inputs = inputs + [self._word_to_ix[self.PAD]] * (self._max_length - lengths)
-        targets = targets + [self._word_to_ix[self.PAD]] * (self._max_length - lengths)
-
-        assert len(inputs) == self._max_length
-
-        self._index += 1
-        if self._index == self._data_size:
-            self.permute()
-            self._index = 0
-
-        return inputs, targets
-
-    def convert_to_string(self, word_ix):
-        return ' '.join(self._ix_to_word[ix] for ix in word_ix)
-
-    def __len__(self):
-        return self._data_size
-
-    @property
-    def vocab_size(self):
-        return self._vocab_size
-
-    
-"""

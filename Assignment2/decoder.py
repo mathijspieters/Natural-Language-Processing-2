@@ -14,7 +14,6 @@ class Decoder(nn.Module):
         self.rnn = nn.GRU(input_size=emb_size, hidden_size=hidden_size,
             num_layers=num_layers)
         self.hidden2out = nn.Linear(hidden_size, vocab_size)
-        self.act = nn.Softmax(dim=0)
 
         self.sos_idx = sos_idx
 
@@ -36,7 +35,6 @@ class Decoder(nn.Module):
         out, _ = nn.utils.rnn.pad_packed_sequence(out)
 
         out = self.hidden2out(out)
-        out = self.act(out)
 
         return out
 
@@ -55,7 +53,6 @@ class Decoder(nn.Module):
             input_ = self.embedder(out)
             out, hidden = self.rnn(input_, hidden)
             out = self.hidden2out(out)
-            out = self.act(out)
             out = out.argmax(dim=-1)
             if sent is None:
                 sent = out

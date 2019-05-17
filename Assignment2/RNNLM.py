@@ -18,9 +18,9 @@ class RNNLM(nn.Module):
         seq_len, batch_size = input.size()
 
         out = self.embedding(input)
-        #out = nn.utils.rnn.pack_padded_sequence(out, lengths)
+        out = nn.utils.rnn.pack_padded_sequence(out, lengths)
         out, _ = self.rnn(out)
-        #out, _ = nn.utils.rnn.pad_packed_sequence(out)
+        out, _ = nn.utils.rnn.pad_packed_sequence(out)
         out = out.contiguous()
         out = out.view(seq_len * batch_size, self.hidden_size)
         out = self.hidden2out(out)

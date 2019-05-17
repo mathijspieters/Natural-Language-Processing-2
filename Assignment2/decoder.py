@@ -27,7 +27,7 @@ class Decoder(nn.Module):
         # hidden = [batch_size, num_layers, hidden_size]
         hidden = hidden.reshape(hidden.size(0), self.num_layers, self.hidden_size)
         # hidden = [num_layers, batch_size, hidden_size]
-        hidden = hidden.transpose(0, 1)
+        hidden = hidden.transpose(0, 1).contiguous()
 
         out = self.embedder(x)
         out = nn.utils.rnn.pack_padded_sequence(out, seq_len)
@@ -44,7 +44,7 @@ class Decoder(nn.Module):
         # hidden = [batch_size, num_layers, hidden_size]
         hidden = hidden.reshape(hidden.size(0), self.num_layers, self.hidden_size)
         # hidden = [num_layers, batch_size, hidden_size]
-        hidden = hidden.transpose(0, 1)
+        hidden = hidden.transpose(0, 1).contiguous()
         sent = None
 
         out = x

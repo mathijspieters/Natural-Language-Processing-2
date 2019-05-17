@@ -8,6 +8,7 @@ import torch.optim as optim
 
 from dataset import Dataset
 from dataset import DataLoader
+import metrics
 
 from sent_vae import SentVAE
 
@@ -60,6 +61,34 @@ def compute_loss(logits, target, mask):
     loss = losses.sum() / mask.float().sum()
     return loss
 
+def evaluate(model, data_loader, dataset, device):
+    accuracy = 0
+    perplexity = 0
+
+    num_samples = len(dataset)
+
+    start_epoch = data_loader.epoch
+
+    for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
+        if data_loader.epoch != start_epoch:
+            data_loader.epoch = start_epoch
+            break
+
+        with torch.no_grad():
+            batch_inputs = batch_inputs.t().to(device)
+            batch_targets = batch_targets.t().to(device)
+            masks = masks.t().to(device)
+            lengths = lengths.to(device)
+            predictions = model.forward(batch_inputs, lengths)
+            predicted_targets = predictions.argmax(dim=-1)
+
+            acc = ACC(predicted_targets, batch_targets, masks, lengths)
+            ppl = metrics.ppl(predictions, batch_targets, masks)
+
+            accuracy += (acc * batch_inputs.size(1))
+            perplexity += (ppl.item() * batch_inputs.size(1))
+
+    return accuracy/num_samples, perplexity/num_samples
 
 def train(config):
 
@@ -69,6 +98,7 @@ def train(config):
     dataset_test, data_loader_test = load_dataset(config, load_test=True, sorted_words=dataset.sorted_words)
 
     model = SentVAE(dataset.vocab_size, config.embedding_size, config.num_hidden, config.latent_size, config.num_layers, dataset.word_2_idx(dataset.PAD), dataset.word_2_idx(dataset.SOS), device)
+    model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
@@ -81,6 +111,7 @@ def train(config):
         batch_inputs = batch_inputs.t().to(device)
         batch_targets = batch_targets.t().to(device)
         masks = masks.t().to(device)
+        lengths = lengths.to(device)
 
 
         predictions, mu, sigma = model.forward(batch_inputs, lengths)
@@ -104,8 +135,8 @@ def train(config):
         accuracy_sum += accuracy.item()
 
         if step % config.print_every == 0:
-            print("STEP %4d     Accuracy: %.3f   Total-loss: %.3f    CE-loss: %.3f   KL-loss: %.3f" %\
-                (step, accuracy_sum/config.print_every, loss_sum/config.print_every, loss_ce_sum/config.print_every, loss_kl_sum/config.print_every))
+            print("Epoch: %2d      STEP %4d     Accuracy: %.3f   Total-loss: %.3f    CE-loss: %.3f   KL-loss: %.3f" %\
+                (data_loader.epoch, step, accuracy_sum/config.print_every, loss_sum/config.print_every, loss_ce_sum/config.print_every, loss_kl_sum/config.print_every))
 
             loss_sum, loss_kl_sum, loss_ce_sum, accuracy_sum  = 0, 0, 0, 0
 
@@ -122,7 +153,10 @@ def train(config):
             train_acc, train_ppl = evaluate(model, data_loader, dataset, device)
 
             print("Train accuracy-perplexity: %.3f-%.3f     Test accuracy-perplexity: %.3f-%.3f" % (train_acc, train_ppl, eval_acc, eval_ppl))
-            torch.save(model.state_dict(), 'model-%d.pt' % step)
+            torch.save(model.state_dict(), 'vae-model-%d.pt' % step)
+
+        if step % config.train_steps == 0:
+            break
 
 
 
@@ -147,7 +181,7 @@ if __name__ == '__main__':
 
     # Misc params
     parser.add_argument('--summary_path', type=str, default="./summaries/", help='Output path for summaries')
-    parser.add_argument('--print_every', type=int, default=100, help='How often to print training progress')
+    parser.add_argument('--print_every', type=int, default=1000, help='How often to print training progress')
     parser.add_argument('--sample_every', type=int, default=5000, help='How often to sample from the model')
 
     parser.add_argument('--saved_model', type=str, default='model.pt')

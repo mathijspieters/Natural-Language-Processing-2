@@ -153,7 +153,10 @@ def train(config):
             train_acc, train_ppl = evaluate(model, data_loader, dataset, device)
 
             print("Train accuracy-perplexity: %.3f-%.3f     Test accuracy-perplexity: %.3f-%.3f" % (train_acc, train_ppl, eval_acc, eval_ppl))
-            torch.save(model.state_dict(), 'model-%d.pt' % step)
+            torch.save(model.state_dict(), 'rnn-model-%d.pt' % step)
+
+        if step % config.train_steps == 0:
+            break
 
 
 if __name__ == '__main__':
@@ -176,7 +179,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_steps', type=int, default=100000, help='Number of training steps')
 
     # Misc params
-    parser.add_argument('--print_every', type=int, default=100, help='How often to print training progress')
+    parser.add_argument('--print_every', type=int, default=1000, help='How often to print training progress')
     parser.add_argument('--sample_every', type=int, default=5000, help='How often to sample from the model')
 
     parser.add_argument('--device', type=str, default='cpu')

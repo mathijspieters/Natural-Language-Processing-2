@@ -79,7 +79,7 @@ def evaluate(model, data_loader, dataset, device):
             batch_targets = batch_targets.t().to(device)
             masks = masks.t().to(device)
             lengths = lengths.to(device)
-            predictions = model.forward(batch_inputs, lengths)
+            predictions, mu, sigma = model.forward(batch_inputs, lengths)
             predicted_targets = predictions.argmax(dim=-1)
 
             acc = ACC(predicted_targets, batch_targets, masks, lengths)
@@ -155,7 +155,7 @@ def train(config):
             print("Train accuracy-perplexity: %.3f-%.3f     Test accuracy-perplexity: %.3f-%.3f" % (train_acc, train_ppl, eval_acc, eval_ppl))
             torch.save(model.state_dict(), 'vae-model-%d.pt' % step)
 
-        if step % config.train_steps == 0:
+        if step == config.train_steps:
             break
 
 

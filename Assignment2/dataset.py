@@ -19,7 +19,7 @@ class Dataset(data.Dataset):
         self._words = set([self.SOS, self.EOS, self.PAD, self.UNK])
         self.data = open(os.path.join(path, file_), "r")
         self.data = self.process(self.data)
-        self._words |= set([word for (word, count) in self.count.most_common(10000)])
+        self._words |= set([word for (word, count) in self.count.most_common(100000)])
 
         if sorted_words == None:
             self.sorted_words = sorted(list(self._words))

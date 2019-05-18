@@ -155,7 +155,7 @@ def train(config):
             print("Train accuracy-perplexity: %.3f-%.3f     Test accuracy-perplexity: %.3f-%.3f" % (train_acc, train_ppl, eval_acc, eval_ppl))
             torch.save(model.state_dict(), 'rnn-model-%d.pt' % step)
 
-        if step % config.train_steps == 0:
+        if step == config.train_steps:
             break
 
 

@@ -10,3 +10,12 @@ def ppl(out, targets, mask):
     likelihood = out.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze()
     likelihood = likelihood.log().sum(dim=0)
     return (-likelihood.sum()/mask.sum()).exp()
+
+def approx_likelihood(SentVAE, inputs, targets, S=10):
+
+    prior = torch.distributions.normal.Normal(torch.zeros(SentVAE.latent_size), 1)
+    log_px = 0
+
+    for k in range(S):
+        p_z = SentVAE.encoder(inputs)
+        print(p_z.size())

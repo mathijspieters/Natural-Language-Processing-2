@@ -1,35 +1,26 @@
 import torch
-from decoder import Decoder
-from RNNLM import RNNLM
-from encoder import Encoder
-from sent_vae import SentVAE
+import numpy as np
 
-# vocab_size = 100
-# emb_size = 50
-# hidden_size = 30
-# latent_size = 10
-# num_layers = 1
-# pad_idx = 0
-# sos_idx = 1
-#
-# seq_len = 3
-# batch_size = 2
-#
-# henk = SentVAE(vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx, sos_idx)
-#
-# input = torch.randint(0, vocab_size, (seq_len, batch_size))
-# b = henk(input)
-#
-# print(b.size())
-# print(b)
+from metrics import approx_likelihood
 
-x = 2
-y = 3
-z = 5
 
-a = torch.rand(x, y, z)
-b = torch.randint(0, z, (x, y)).unsqueeze(-1)
+latent_size = 2
+batch_size = 3
+S = 1
 
-print(a)
-print(b)
-print(a.gather(dim=-1, index=b).size())
+prior = torch.distributions.normal.Normal(torch.zeros(latent_size), 1)
+
+for k in range(S):
+    mu = torch.randn((batch_size, latent_size))
+    sigma = torch.randn((batch_size, latent_size)).pow(2)
+
+    q = torch.distributions.normal.Normal(mu, sigma)
+    z = q.sample()
+    q_prob = q.log_prob(z).sum(-1)
+    prior_prob = prior.log_prob(z).sum(-1)
+
+    p_prob = torch.randn(3,)
+
+    p_x = p_prob + prior_prob - q_prob
+
+    p_x = torch.logsumexp(p_x) - log(N)

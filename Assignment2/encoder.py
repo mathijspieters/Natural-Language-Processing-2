@@ -14,10 +14,6 @@ class Encoder(nn.Module):
         self.hidden2sigma = nn.Linear(hidden_size, latent_size)
 
         self.act = nn.Softplus()
-        self.kl = None
-
-    def KL_div(self, mu, sigma):
-        self.kl = -0.5*torch.mean(1 + sigma.log() - mu.pow(2) - sigma, dim=1)
 
     def forward(self, input, lengths):
         out = self.embedder(input)
@@ -34,5 +30,4 @@ class Encoder(nn.Module):
         mu = self.hidden2mu(h)
         sigma = self.act(self.hidden2sigma(h))
 
-        self.KL_div(mu, sigma)
         return mu, sigma

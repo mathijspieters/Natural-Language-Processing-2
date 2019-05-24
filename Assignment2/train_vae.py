@@ -64,6 +64,7 @@ def compute_loss(logits, target, mask):
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
     perplexity = 0
+    likelihood = 0
 
     num_samples = len(dataset)
 
@@ -82,13 +83,15 @@ def evaluate(model, data_loader, dataset, device):
             predictions, mu, sigma = model.forward(batch_inputs, lengths)
             predicted_targets = predictions.argmax(dim=-1)
 
-            acc = ACC(predicted_targets, batch_targets, masks, lengths)
-            ppl = metrics.ppl(predictions, batch_targets, masks)
+            N = batch_inputs.size(1)
 
-            accuracy += (acc * batch_inputs.size(1))
-            perplexity += (ppl.item() * batch_inputs.size(1))
+            accuracy += ACC(predicted_targets, batch_targets, masks, lengths)*N
+            ll, ppl = metrics.eval_VAE(model, batch_inputs, batch_targets)
+            perplexity += ppl*N
+            likelihood += ll*N
 
-    return accuracy/num_samples, perplexity/num_samples
+
+    return accuracy/num_samples, perplexity/num_samples, likelihood/num_samples
 
 def train(config):
 
@@ -119,7 +122,7 @@ def train(config):
         predicted_targets = predictions.argmax(dim=-1)
 
         accuracy = ACC(predicted_targets, batch_targets, masks, lengths)
-        
+
         ce_loss = compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
         kl_loss = KL(mu, sigma)
 

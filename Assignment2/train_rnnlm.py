@@ -35,7 +35,7 @@ def evaluate(model, data_loader, dataset, device):
             predicted_targets = predictions.argmax(dim=-1)
 
             acc = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
-            ll, ppl = metrics.ppl_RNN(predictions, batch_targets, masks)
+            ll, ppl = metrics.eval_RNN(predictions, batch_targets, masks)
 
             N = batch_inputs.size(1)
 
@@ -43,11 +43,11 @@ def evaluate(model, data_loader, dataset, device):
             likelihood += ll*N
             perplexity += ppl*N
 
-    return accuracy.item()/num_samples, likelihood.item()/num_samples, perplexity.item()/num_samples
+    return accuracy.item()/num_samples, perplexity.item()/num_samples, likelihood.item()/num_samples
 
 
 def train(config):
-
+    print("Thank you for choosing the RNNLM today!")
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     dataset, data_loader = load_dataset(config, type_='train')
@@ -108,10 +108,10 @@ def train(config):
             data_loader.print_batch(sample)
 
         if step % 10000 == 0:
-            eval_acc, eval_ppl = evaluate(model, data_loader_test_eval, dataset_test_eval, device)
-            train_acc, train_ppl = evaluate(model, data_loader_train_eval, dataset_train_eval, device)
+            eval_acc, eval_ppl, eval_ll = evaluate(model, data_loader_test_eval, dataset_test_eval, device)
+            train_acc, train_ppl, train_ll = evaluate(model, data_loader_train_eval, dataset_train_eval, device)
 
-            print("Train accuracy-perplexity: %.3f-%.3f     Test accuracy-perplexity: %.3f-%.3f" % (train_acc, train_ppl, eval_acc, eval_ppl))
+            print("Train accuracy-perplexity_likelihood: %.3f %.3f %.3f Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll, eval_acc, eval_ppl, eval_ll))
             torch.save(model.state_dict(), 'rnn-model-%d.pt' % step)
 
         if step == config.train_steps:

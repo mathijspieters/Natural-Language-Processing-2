@@ -34,7 +34,7 @@ class Dataset(data.Dataset):
 
     def __len__(self):
         return len(self.data)
-    
+
     def __getitem__(self, index):
         return self.data[index]
 
@@ -48,6 +48,8 @@ class Dataset(data.Dataset):
             sentence = [w for w in sentence if w not in punctuation]
             self.count += Counter(sentence)
             tmp.append(sentence)
+            if i == 99:
+                break
         return tmp
 
     def create_vocabulary(self):

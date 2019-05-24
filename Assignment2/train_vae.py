@@ -36,8 +36,8 @@ def evaluate(model, data_loader, dataset, device):
 
             N = batch_inputs.size(1)
 
-            accuracy += ACC(predicted_targets, batch_targets, masks, lengths)*N
-            ll, ppl = metrics.eval_VAE(model, batch_inputs, batch_targets)
+            accuracy += metrics.ACC(predicted_targets, batch_targets, masks, lengths)*N
+            ll, ppl = metrics.eval_VAE(model, batch_inputs, batch_targets, masks)
             perplexity += ppl*N
             likelihood += ll*N
 
@@ -46,12 +46,15 @@ def evaluate(model, data_loader, dataset, device):
 
 
 def train(config):
-
+    print("Thank you for choosing the Sentence VAE today!")
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     dataset, data_loader = load_dataset(config, type_='train')
     dataset_test_eval, data_loader_test_eval = load_dataset(config, type_='test', sorted_words=dataset.sorted_words)
     dataset_train_eval, data_loader_train_eval = load_dataset(config, type_='train_eval', sorted_words=dataset.sorted_words)
+
+    print("Size of train dataset: %d" % len(dataset))
+    print("Size of test dataset: %d" % len(dataset_test_eval))
 
     model = SentVAE(dataset.vocab_size, config.embedding_size, config.num_hidden, config.latent_size, config.num_layers, dataset.word_2_idx(dataset.PAD), dataset.word_2_idx(dataset.SOS), device)
     model.to(device)
@@ -73,10 +76,10 @@ def train(config):
 
         predicted_targets = predictions.argmax(dim=-1)
 
-        accuracy = ACC(predicted_targets, batch_targets, masks, lengths)
+        accuracy = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
 
-        ce_loss = compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
-        kl_loss = KL(mu, sigma)
+        ce_loss = metrics.compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
+        kl_loss = metrics.KL(mu, sigma)
         accuracy = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
 
         ce_loss = metrics.compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
@@ -113,10 +116,10 @@ def train(config):
 
 
         if step % 10000 == 0:
-            eval_acc, eval_ppl = evaluate(model, data_loader_test_eval, dataset_test_eval, device)
-            train_acc, train_ppl = evaluate(model, data_loader_train_eval, dataset_train_eval, device)
+            eval_acc, eval_ppl, eval_ll = evaluate(model, data_loader_test_eval, dataset_test_eval, device)
+            train_acc, train_ppl, train_ll = evaluate(model, data_loader_train_eval, dataset_train_eval, device)
 
-            print("Train accuracy-perplexity: %.3f-%.3f     Test accuracy-perplexity: %.3f-%.3f" % (train_acc, train_ppl, eval_acc, eval_ppl))
+            print("Train accuracy-perplexity_likelihood: %.3f %.3f %.3f Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll, eval_acc, eval_ppl, eval_ll))
             torch.save(model.state_dict(), 'vae-model-%d.pt' % step)
 
         if step == config.train_steps:

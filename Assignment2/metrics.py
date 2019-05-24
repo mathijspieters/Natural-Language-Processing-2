@@ -10,13 +10,13 @@ def ACC(predictions, targets, masks, lengths):
     correct = ((predictions == targets).sum(dim=0).float() / lengths.float()).mean()
     return correct
 
-def ppl(out, targets, mask):
+def eval_RNN(out, targets, mask):
     """ Compute perplexity """
     #Collect the probs of the targets.
     out = torch.nn.functional.softmax(out, dim=-1)
     likelihood = out.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze()
     likelihood = likelihood.log().sum()
-    return -likelihood
+    return -likelihood, (-likelihood/mask.sum()).exp()
 
 def compute_loss(logits, target, mask):
     """
@@ -49,7 +49,7 @@ def compute_loss(logits, target, mask):
     loss = loss / logits.shape[0]
     return loss
 
-def approx_likelihood(SentVAE, inputs, targets, S=10):
+def eval_VAE(SentVAE, inputs, targets, S=10):
 
     prior = torch.distributions.normal.Normal(torch.zeros(SentVAE.latent_size), 1)
     log_px = 0

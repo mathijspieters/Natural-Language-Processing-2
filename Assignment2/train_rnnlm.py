@@ -14,8 +14,8 @@ from RNNLM import RNNLM
 
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
+    likelihood = 0
     perplexity = 0
-    sum_lengths = 0
 
     num_samples = len(dataset)
 
@@ -35,13 +35,15 @@ def evaluate(model, data_loader, dataset, device):
             predicted_targets = predictions.argmax(dim=-1)
 
             acc = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
-            ppl = metrics.ppl(predictions, batch_targets, masks)
+            ll, ppl = metrics.ppl_RNN(predictions, batch_targets, masks)
 
-            accuracy += (acc * batch_inputs.size(1))
-            perplexity += ppl.item()
-            sum_lengths += lengths.sum().item()
+            N = batch_inputs.size(1)
 
-    return accuracy/num_samples, np.exp(perplexity/sum_lengths)
+            accuracy += acc*N
+            likelihood += ll*N
+            perplexity += ppl*N
+
+    return accuracy.item()/num_samples, likelihood.item()/num_samples, perplexity.item()/num_samples
 
 
 def train(config):
@@ -127,7 +129,7 @@ if __name__ == '__main__':
     # Training params
     parser.add_argument('--batch_size', type=int, default=20, help='Number of examples to process in a batch')
     parser.add_argument('--learning_rate', type=float, default=2e-3, help='Learning rate')
- 
+
     # It is not necessary to implement the following three params, but it may help training.
     parser.add_argument('--learning_rate_decay', type=float, default=0.96, help='Learning rate decay fraction')
     parser.add_argument('--learning_rate_step', type=int, default=1000, help='Learning rate step')

@@ -15,11 +15,7 @@ from sent_vae import SentVAE
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
     perplexity = 0
-<<<<<<< HEAD
     likelihood = 0
-=======
-    sum_lengths = 0
->>>>>>> 74bb3ee92040a7d7c391a4e296b7f71278573eca
 
     num_samples = len(dataset)
 
@@ -38,7 +34,6 @@ def evaluate(model, data_loader, dataset, device):
             predictions, mu, sigma = model.forward(batch_inputs, lengths)
             predicted_targets = predictions.argmax(dim=-1)
 
-<<<<<<< HEAD
             N = batch_inputs.size(1)
 
             accuracy += ACC(predicted_targets, batch_targets, masks, lengths)*N
@@ -48,16 +43,7 @@ def evaluate(model, data_loader, dataset, device):
 
 
     return accuracy/num_samples, perplexity/num_samples, likelihood/num_samples
-=======
-            acc = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
-            ppl = metrics.ppl(predictions, batch_targets, masks)
 
-            accuracy += (acc * batch_inputs.size(1))
-            perplexity += ppl.item()
-            sum_lengths += lengths.sum().item()
-
-    return accuracy/num_samples, np.exp(perplexity/sum_lengths)
->>>>>>> 74bb3ee92040a7d7c391a4e296b7f71278573eca
 
 def train(config):
 
@@ -87,17 +73,14 @@ def train(config):
 
         predicted_targets = predictions.argmax(dim=-1)
 
-<<<<<<< HEAD
         accuracy = ACC(predicted_targets, batch_targets, masks, lengths)
 
         ce_loss = compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
         kl_loss = KL(mu, sigma)
-=======
         accuracy = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
-        
+
         ce_loss = metrics.compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
         kl_loss = metrics.KL(mu, sigma).mean()
->>>>>>> 74bb3ee92040a7d7c391a4e296b7f71278573eca
 
         loss = ce_loss + kl_loss
 

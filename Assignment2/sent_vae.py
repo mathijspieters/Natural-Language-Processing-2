@@ -17,7 +17,8 @@ class SentVAE(nn.Module):
     def forward(self, input, lengths):
         mu, sigma = self.encoder(input, lengths)
         eps = torch.normal(torch.zeros_like(mu)).to(self.device)
-        z = mu + sigma*eps
+        z = mu + 0.5*sigma.exp() * eps
+
         out = self.decoder(input, z, lengths)
         return out, mu, sigma
 

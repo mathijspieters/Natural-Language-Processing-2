@@ -12,37 +12,6 @@ import metrics
 from RNNLM import RNNLM
 
 
-def compute_loss(logits, target, mask):
-    """
-    Args:
-        logits: A Variable containing a FloatTensor of size
-            (batch, max_len, num_classes) which contains the
-            unnormalized probability for each class.
-        target: A Variable containing a LongTensor of size
-            (batch, max_len) which contains the index of the true
-            class for each corresponding step.
-        length: A Variable containing a LongTensor of size (batch,)
-            which contains the length of each data in a batch.
-    Returns:
-        loss: An average loss value masked by the length.
-    """
-
-    # logits_flat: (batch * max_len, num_classes)
-    logits_flat = logits.view(-1, logits.size(-1))
-    # log_probs_flat: (batch * max_len, num_classes)
-    log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=1)
-    # target_flat: (batch * max_len, 1)
-    target_flat = target.view(-1, 1)
-    # losses_flat: (batch * max_len, 1)
-    losses_flat = -torch.gather(log_probs_flat, dim=1, index=target_flat)
-    # losses: (batch, max_len)
-    losses = losses_flat.view(*target.size())
-    # mask: (batch, max_len)
-    losses = losses * mask.float()
-    loss = losses.sum() / mask.float().sum()
-    return loss
-
-
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
     perplexity = 0
@@ -113,7 +82,7 @@ def train(config):
 
         accuracy = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
 
-        loss = compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
+        loss = metrics.compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
 
         loss.backward()
         optimizer.step()

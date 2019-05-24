@@ -11,35 +11,6 @@ import metrics
 
 from sent_vae import SentVAE
 
-def compute_loss(logits, target, mask):
-    """
-    Args:
-        logits: A Variable containing a FloatTensor of size
-            (batch, max_len, num_classes) which contains the
-            unnormalized probability for each class.
-        target: A Variable containing a LongTensor of size
-            (batch, max_len) which contains the index of the true
-            class for each corresponding step.
-        length: A Variable containing a LongTensor of size (batch,)
-            which contains the length of each data in a batch.
-    Returns:
-        loss: An average loss value masked by the length.
-    """
-
-    # logits_flat: (batch * max_len, num_classes)
-    logits_flat = logits.view(-1, logits.size(-1))
-    # log_probs_flat: (batch * max_len, num_classes)
-    log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=1)
-    # target_flat: (batch * max_len, 1)
-    target_flat = target.view(-1, 1)
-    # losses_flat: (batch * max_len, 1)
-    losses_flat = -torch.gather(log_probs_flat, dim=1, index=target_flat)
-    # losses: (batch, max_len)
-    losses = losses_flat.view(*target.size())
-    # mask: (batch, max_len)
-    losses = losses * mask.float()
-    loss = losses.sum() / mask.float().sum()
-    return loss
 
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
@@ -102,8 +73,8 @@ def train(config):
 
         accuracy = metrics.ACC(predicted_targets, batch_targets, masks, lengths)
         
-        ce_loss = compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
-        kl_loss = metrics.KL(mu, sigma)
+        ce_loss = metrics.compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
+        kl_loss = metrics.KL(mu, sigma).mean()
 
         loss = ce_loss + kl_loss
 
@@ -152,7 +123,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Model params
-    parser.add_argument('--num_hidden', type=int, default=600, help='Number of hidden units in the LSTM')
+    parser.add_argument('--num_hidden', type=int, default=400, help='Number of hidden units in the LSTM')
     parser.add_argument('--num_layers', type=int, default=2, help='Number of LSTM layers in the model')
 
     # Training params
@@ -173,7 +144,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--saved_model', type=str, default='model.pt')
 
-    parser.add_argument('--embedding_size', type=int, default=256)
+    parser.add_argument('--embedding_size', type=int, default=128)
     parser.add_argument('--latent_size', type=int, default=16)
 
     config = parser.parse_args()

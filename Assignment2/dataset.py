@@ -126,7 +126,7 @@ def load_dataset(config, type_='train', sorted_words=None):
 
     if type_ == 'train':
         dataset = Dataset('data')
-        data_loader = DataLoader(dataset, batch_size=config.batch_size, word_dropout=0.2)
+        data_loader = DataLoader(dataset, batch_size=config.batch_size, word_dropout=0.25)
     elif type_ == 'test':
         dataset = Dataset('data', file_='23.auto.clean', sorted_words=sorted_words)
         data_loader = DataLoader(dataset, batch_size=config.batch_size)

@@ -26,7 +26,6 @@ def evaluate(model, data_loader, dataset, device):
             if data_loader.epoch != start_epoch:
                 data_loader.epoch = start_epoch
                 break
-            print("eval", step)
             batch_inputs = batch_inputs.t().to(device)
             batch_targets = batch_targets.t().to(device)
             masks = masks.t().to(device)
@@ -69,7 +68,6 @@ def train(config):
 
     for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
-        print(step)
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5)
 

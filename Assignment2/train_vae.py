@@ -103,16 +103,32 @@ def train(config):
             loss_sum, loss_kl_sum, loss_ce_sum, accuracy_sum  = 0, 0, 0, 0
 
         if step % config.sample_every == 0:
-            print("%s\nBATCH TARGETS:" % ("-"*60))
-            data_loader.print_batch(batch_targets.t())
-            print("%s\nPREDICTED TARGETS:" % ("-"*60))
-            data_loader.print_batch(predicted_targets.t())
+
+            targets = data_loader.print_batch(batch_targets.t())
+            predictions = data_loader.print_batch(predicted_targets.t())
+            for i in range(len(targets)):
+                print("----------------------------")
+                print(targets[i])
+                print()
+                print(predictions[i])
+                print()
+
+
+
             print("%s\nSAMPLES:" % ("-"*60))
             sample = model.sample()
-            data_loader.print_batch(sample.t())
+            sample = data_loader.print_batch(sample.t())
+            for s in sample:
+                print(s)
+                print()
+
+
             print("%s\nINTERPOLATION:" % ("-"*60))
             result = model.interpolation(n_steps=10)
-            data_loader.print_batch(result.t())
+            result = data_loader.print_batch(result.t())
+            for s in result:
+                print(s)
+                print()
 
 
         if step % 10000 == 0:

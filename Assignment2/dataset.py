@@ -3,6 +3,7 @@ import os
 import numpy as np
 from collections import Counter
 import string
+import random
 
 from torch.utils import data
 from nltk.tree import Tree
@@ -61,18 +62,21 @@ class Dataset(data.Dataset):
 
 
 class DataLoader:
-    def __init__(self, dataset, batch_size=8):
+    def __init__(self, dataset, batch_size=8, word_dropout=0.):
         self.dataset = dataset
         self._data_size = len(self.dataset)
         self.permute()
         self.index = 0
         self.epoch = 0
         self.batch_size = batch_size
+        self.word_dropout = word_dropout
 
     def __getitem__(self, item):
         SOS = self.dataset.word_2_idx(self.dataset.SOS)
         EOS = self.dataset.word_2_idx(self.dataset.EOS)
         PAD = self.dataset.word_2_idx(self.dataset.PAD)
+        UNK = self.dataset.word_2_idx(self.dataset.UNK)
+
         data = [self.dataset[idx] for idx in self._indices[self.index:self.index+self.batch_size]]
         self.index = self.index + self.batch_size
 
@@ -91,7 +95,11 @@ class DataLoader:
         lengths = lengths[idx_sorted]
         tokens = [tokens[idx] for idx in idx_sorted]
 
-        inputs = [[SOS]+sentence for sentence in tokens]
+        if self.word_dropout > 0:
+            inputs = [[SOS]+ [i if random.uniform(0,1) > self.word_dropout else UNK for i in inp] for inp in tokens]
+        else:
+            inputs = [[SOS]+inp for inp in tokens]
+
         inputs = [sentence+[PAD]*(max_length-len(sentence)) for sentence in inputs]
 
         outputs = [sentence+[EOS] for sentence in tokens]
@@ -112,3 +120,18 @@ class DataLoader:
             print(" ".join([self.dataset.idx_2_word(w) for w in sentence.tolist()]))
             print()
 
+
+def load_dataset(config, type_='train', sorted_words=None):
+    assert type_ in ['train', 'test', 'train_eval'], 'Type must be train/test/train_eval'
+
+    if type_ == 'train':
+        dataset = Dataset('data')
+        data_loader = DataLoader(dataset, batch_size=config.batch_size, word_dropout=0.2)
+    elif type_ == 'test':
+        dataset = Dataset('data', file_='23.auto.clean', sorted_words=sorted_words)
+        data_loader = DataLoader(dataset, batch_size=config.batch_size)
+    elif type_ == 'train_eval':
+        dataset = Dataset('data', sorted_words=sorted_words)
+        data_loader = DataLoader(dataset, batch_size=config.batch_size)
+
+    return dataset, data_loader

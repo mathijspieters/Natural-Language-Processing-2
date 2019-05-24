@@ -21,12 +21,12 @@ def evaluate(model, data_loader, dataset, device):
 
     start_epoch = data_loader.epoch
 
-    for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
-        if data_loader.epoch != start_epoch:
-            data_loader.epoch = start_epoch
-            break
-
-        with torch.no_grad():
+    with torch.no_grad():
+        for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
+            if data_loader.epoch != start_epoch:
+                data_loader.epoch = start_epoch
+                break
+            print("eval", step)
             batch_inputs = batch_inputs.t().to(device)
             batch_targets = batch_targets.t().to(device)
             masks = masks.t().to(device)
@@ -69,6 +69,7 @@ def train(config):
 
     for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
+        print(step)
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5)
 
@@ -100,12 +101,19 @@ def train(config):
             loss_ce_sum, accuracy_sum  = 0, 0
 
         if step % config.sample_every == 0:
-            data_loader.print_batch(predicted_targets.t())
-            print()
-            data_loader.print_batch(batch_targets.t())
-            print()
+            predictions = data_loader.print_batch(predicted_targets.t())
+            targets = data_loader.print_batch(batch_targets.t())
+            for i in range(len(targets)):
+                print("-----------------------")
+                print(targets[i])
+                print()
+                print(predictions[i])
+
             sample = model.sample(dataset.word_2_idx(dataset.SOS), 30)
-            data_loader.print_batch(sample)
+            sample = data_loader.print_batch(sample)
+            print()
+            for i in range(len(sample)):
+                print(sample[i])
 
         if step % 10000 == 0:
             eval_acc, eval_ppl, eval_ll = evaluate(model, data_loader_test_eval, dataset_test_eval, device)

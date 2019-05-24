@@ -59,4 +59,3 @@ class Decoder(nn.Module):
             else:
                 sent = torch.cat([sent, out], dim=0)
         return sent
-

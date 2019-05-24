@@ -118,10 +118,10 @@ class DataLoader:
         self._indices = np.random.permutation(self._data_size)
 
     def print_batch(self, batch):
+        s = []
         for sentence in batch:
-            print(" ".join([self.dataset.idx_2_word(w) for w in sentence.tolist()]))
-            print()
-
+            s.append(" ".join([self.dataset.idx_2_word(w) for w in sentence.tolist()]))
+        return s
 
 def load_dataset(config, type_='train', sorted_words=None):
     assert type_ in ['train', 'test', 'train_eval'], 'Type must be train/test/train_eval'

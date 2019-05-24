@@ -45,4 +45,3 @@ class RNNLM(nn.Module):
                 sent = torch.cat([sent, out], dim=1)
 
         return sent
-

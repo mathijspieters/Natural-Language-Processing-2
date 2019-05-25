@@ -42,8 +42,6 @@ class Dataset(data.Dataset):
         tmp = []
         #punctuation = string.punctuation
         for i, d in enumerate(data.readlines()):
-            if i > 99:
-                break
             t = Tree.fromstring(d)
             sentence = t.leaves()
             #sentence = [w.lower() for w in sentence]

@@ -55,7 +55,7 @@ def train(config):
     print(config)
     print()
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     dataset, data_loader = load_dataset(config, type_='train')
     dataset_test_eval, data_loader_test_eval = load_dataset(config, type_='test', sorted_words=dataset.sorted_words)

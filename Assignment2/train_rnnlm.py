@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--saved_model', type=str, default='model.pt')
 
-    parser.add_argument('--embedding_size', type=int, default=100)
+    parser.add_argument('--embedding_size', type=int, default=200)
 
     parser.add_argument('--comment', type=str, default='')
 

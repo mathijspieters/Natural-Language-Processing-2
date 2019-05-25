@@ -12,7 +12,8 @@ import metrics
 from RNNLM import RNNLM
 
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
+
+from utils import markdown_hyperparams
 
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
@@ -75,6 +76,8 @@ def train(config):
     loss_ce_sum, accuracy_sum  = 0, 0
 
     current_epoch = -1
+
+
     for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
 
@@ -155,7 +158,7 @@ def train(config):
             writer.add_text('RNNLM/Samples', markdown_str, current_epoch)
 
 
-            torch.save(model.state_dict(), 'rnn-model-%d.pt' % current_epoch)
+            torch.save(model.state_dict(), 'models/rnn-model-%d.pt' % current_epoch)
 
         if data_loader.epoch == config.epochs:
             break
@@ -186,6 +189,14 @@ if __name__ == '__main__':
 
     parser.add_argument('--embedding_size', type=int, default=100)
 
+    parser.add_argument('--comment', type=str, default='')
+
     config = parser.parse_args()
+
+    writer = SummaryWriter(comment='-'+config.comment)
+
+    # print hyperparameters to tensorboard
+    params = markdown_hyperparams(config)
+    writer.add_text('RNNLM/Hyperparameters', params)
 
     train(config)

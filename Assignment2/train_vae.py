@@ -11,6 +11,9 @@ import metrics
 
 from sent_vae import SentVAE
 
+from torch.utils.tensorboard import SummaryWriter
+
+from utils import markdown_hyperparams
 
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
@@ -71,6 +74,7 @@ def train(config):
 
     loss_sum, loss_kl_sum, loss_ce_sum, accuracy_sum  = 0, 0, 0, 0
 
+    current_epoch = -1
     for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
         batch_inputs = batch_inputs.t().to(device)
@@ -137,7 +141,10 @@ def train(config):
                 print()
 
 
-        if step % 5000 == 0:
+        # if step % 5000 == 0:
+        if data_loader.epoch != current_epoch:
+            current_epoch = data_loader.epoch
+
             eval_acc, eval_ppl, eval_ll = evaluate(model, data_loader_test_eval, dataset_test_eval, device)
             val_acc, val_ppl, val_ll = evaluate(model, data_loader_validation_eval, dataset_validation_eval, device)
             train_acc, train_ppl, train_ll = evaluate(model, data_loader_train_eval, dataset_train_eval, device)
@@ -146,7 +153,34 @@ def train(config):
             print("Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll))
             print("Validation accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (val_acc, val_ppl, val_ll))
 
-            torch.save(model.state_dict(), 'vae-model-%d.pt' % step)
+            writer.add_scalar('SVAE/Train accuracy', train_acc, current_epoch)
+            writer.add_scalar('SVAE/Train perplexity', train_ppl, current_epoch)
+            writer.add_scalar('SVAE/Train likelihood', train_ll, current_epoch)
+
+            writer.add_scalar('SVAE/Test accuracy', eval_acc, current_epoch)
+            writer.add_scalar('SVAE/Test perplexity', eval_ppl, current_epoch)
+            writer.add_scalar('SVAE/Test likelihood', eval_ll, current_epoch)
+
+            writer.add_scalar('SVAE/Valid accuracy', val_acc, current_epoch)
+            writer.add_scalar('SVAE/Valid perplexity', val_ppl, current_epoch)
+            writer.add_scalar('SVAE/Valid likelihood', val_ll, current_epoch)
+
+            markdown_str = ''
+            sample = model.sample()
+            sample = data_loader.print_batch(sample.t(), stop_after_EOS=True)
+            for s in sample:
+                markdown_str += '{}  \n'.format(s)
+            writer.add_text('SVAE/Samples', markdown_str, current_epoch)
+
+            markdown_str = ''
+            result = model.interpolation(n_steps=10)
+            result = data_loader.print_batch(result.t(), stop_after_EOS=True)
+            for s in result:
+                markdown_str += '{}  \n'.format(s)
+            writer.add_text('SVAE/Interpolation', markdown_str, current_epoch)
+
+
+            torch.save(model.state_dict(), 'models/vae-model-%d.pt' % step)
 
         if data_loader.epoch == config.epochs:
             break
@@ -181,6 +215,14 @@ if __name__ == '__main__':
     parser.add_argument('--embedding_size', type=int, default=128)
     parser.add_argument('--latent_size', type=int, default=16)
 
+    parser.add_argument('--comment', type=str, default='')
+
     config = parser.parse_args()
+
+    writer = SummaryWriter(comment='-'+config.comment)
+
+    # print hyperparameters to tensorboard
+    params = markdown_hyperparams(config)
+    writer.add_text('SVAE/Hyperparameters', params)
 
     train(config)

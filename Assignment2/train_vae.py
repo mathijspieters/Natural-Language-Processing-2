@@ -16,6 +16,7 @@ def evaluate(model, data_loader, dataset, device):
     accuracy = 0
     perplexity = 0
     likelihood = 0
+    sum_lengths = 0
 
     num_samples = len(dataset)
 
@@ -31,26 +32,31 @@ def evaluate(model, data_loader, dataset, device):
             batch_targets = batch_targets.t().to(device)
             masks = masks.t().to(device)
             lengths = lengths.to(device)
-            predictions, mu, sigma = model.forward(batch_inputs, lengths)
+            predictions, mu, sigma = model.forward(batch_inputs, lengths, greedy=True)
             predicted_targets = predictions.argmax(dim=-1)
 
             N = batch_inputs.size(1)
 
             accuracy += metrics.ACC(predicted_targets, batch_targets, masks, lengths)*N
-            ll, ppl = metrics.eval_VAE(model, batch_inputs, batch_targets, masks)
-            perplexity += ppl*N
+            ll, ppl = metrics.eval_VAE(model, batch_inputs, batch_targets, masks, device)
+            perplexity += ppl
+            sum_lengths += lengths.sum()
             likelihood += ll*N
 
 
-    return accuracy.item()/num_samples, np.exp(perplexity.item()/num_samples), likelihood.item()/num_samples
+    return accuracy.item()/num_samples, np.exp(perplexity.item()/sum_lengths.item()), likelihood.item()/num_samples
 
 
 def train(config):
     print("Thank you for choosing the Sentence VAE today!")
+    print(config)
+    print()
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    dataset, data_loader = load_dataset(config, type_='train')
+    dataset, data_loader = load_dataset(config, type_='train', dropout_rate=config.word_dropout)
     dataset_test_eval, data_loader_test_eval = load_dataset(config, type_='test', sorted_words=dataset.sorted_words)
+    dataset_validation_eval, data_loader_validation_eval = load_dataset(config, type_='validation', sorted_words=dataset.sorted_words)
     dataset_train_eval, data_loader_train_eval = load_dataset(config, type_='train_eval', sorted_words=dataset.sorted_words)
 
     print("Size of train dataset: %d" % len(dataset))
@@ -89,7 +95,7 @@ def train(config):
 
         loss.backward()
         optimizer.step()
-        scheduler.step()
+        #scheduler.step()
 
         loss_sum += loss.item()
         loss_kl_sum += kl_loss.item()
@@ -117,7 +123,7 @@ def train(config):
 
             print("%s\nSAMPLES:" % ("-"*60))
             sample = model.sample()
-            sample = data_loader.print_batch(sample.t())
+            sample = data_loader.print_batch(sample.t(), stop_after_EOS=True)
             for s in sample:
                 print(s)
                 print()
@@ -125,17 +131,21 @@ def train(config):
 
             print("%s\nINTERPOLATION:" % ("-"*60))
             result = model.interpolation(n_steps=10)
-            result = data_loader.print_batch(result.t())
+            result = data_loader.print_batch(result.t(), stop_after_EOS=True)
             for s in result:
                 print(s)
                 print()
 
 
-        if step % 10000 == 0:
+        if step % 5000 == 0:
             eval_acc, eval_ppl, eval_ll = evaluate(model, data_loader_test_eval, dataset_test_eval, device)
+            val_acc, val_ppl, val_ll = evaluate(model, data_loader_validation_eval, dataset_validation_eval, device)
             train_acc, train_ppl, train_ll = evaluate(model, data_loader_train_eval, dataset_train_eval, device)
 
-            print("Train accuracy-perplexity_likelihood: %.3f %.3f %.3f Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll, eval_acc, eval_ppl, eval_ll))
+            print("Train accuracy-perplexity_likelihood: %.3f %.3f %.3f" % (eval_acc, eval_ppl, eval_ll))
+            print("Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll))
+            print("Validation accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (val_acc, val_ppl, val_ll))
+
             torch.save(model.state_dict(), 'vae-model-%d.pt' % step)
 
         if data_loader.epoch == config.epochs:
@@ -148,17 +158,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Model params
-    parser.add_argument('--num_hidden', type=int, default=400, help='Number of hidden units in the LSTM')
+    parser.add_argument('--num_hidden', type=int, default=100, help='Number of hidden units in the LSTM')
     parser.add_argument('--num_layers', type=int, default=2, help='Number of LSTM layers in the model')
 
     # Training params
     parser.add_argument('--batch_size', type=int, default=20, help='Number of examples to process in a batch')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--word_dropout', type=float, default=0.2, help='Learning rate')
+
 
     # It is not necessary to implement the following three params, but it may help training.
     parser.add_argument('--learning_rate_decay', type=float, default=0.96, help='Learning rate decay fraction')
     parser.add_argument('--learning_rate_step', type=int, default=1000, help='Learning rate step')
-    parser.add_argument('--epochs', type=int, default=30, help='Number of training epochs')
+    parser.add_argument('--epochs', type=int, default=20, help='Number of training epochs')
 
     # Misc params
     parser.add_argument('--print_every', type=int, default=1000, help='How often to print training progress')

@@ -13,31 +13,54 @@ def ACC(predictions, targets, masks, lengths):
 def eval_RNN(out, targets, mask):
     """ Compute perplexity """
     #Collect the probs of the targets.
-    out = torch.nn.functional.softmax(out, dim=-1)
-    likelihood = out.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze()
-    likelihood = likelihood.log().sum(0)
-    return -likelihood.mean(), -likelihood.sum()/mask.sum()
 
-def eval_VAE(SentVAE, inputs, targets, mask, S=10):
+    logits_flat = out.view(-1, out.size(-1))
+    # log_probs_flat: (batch * max_len, num_classes)
+    log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=1)
+    # target_flat: (batch * max_len, 1)
+    target_flat = targets.contiguous().view(-1, 1)
+    # losses_flat: (batch * max_len, 1)
+    losses_flat = -torch.gather(log_probs_flat, dim=1, index=target_flat)
+    # losses: (batch, max_len)
+    losses = losses_flat.view(*targets.size())
+    # mask: (batch, max_len)
+    prob = losses * mask.float()
+
+    likelihood = prob.sum(0)
+    ppl = prob.sum()
+
+    return -likelihood.mean(), ppl
+
+def eval_VAE(SentVAE, inputs, targets, mask, device, S=10):
     mu, log_sigma = SentVAE.encoder(inputs, mask.sum(0))
 
-    prior = torch.distributions.normal.Normal(torch.zeros(inputs.size(1), SentVAE.latent_size), 1)
+    prior = torch.distributions.normal.Normal(torch.zeros(inputs.size(1), SentVAE.latent_size).to(device), 1)
     posterior = torch.distributions.normal.Normal(mu, log_sigma.exp())
 
-    likelihood = torch.zeros(S, mask.size(1))
+    likelihood = torch.zeros(S, mask.size(1)).to(device)
     for k in range(S):
-        z = posterior.sample()
+        z = posterior.sample().to(device)
         out = SentVAE.decoder(inputs, z, mask.sum(0))
-        out = torch.nn.functional.softmax(out, dim=-1)
-        p = out.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze().log().sum(0)
+        
+        logits_flat = out.view(-1, out.size(-1))
+        # log_probs_flat: (batch * max_len, num_classes)
+        log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=1)
+        # target_flat: (batch * max_len, 1)
+        target_flat = targets.contiguous().view(-1, 1)
+        # losses_flat: (batch * max_len, 1)
+        losses_flat = -torch.gather(log_probs_flat, dim=1, index=target_flat)
+        # losses: (batch, max_len)
+        losses = losses_flat.view(*targets.size())
+        # mask: (batch, max_len)
+        p = (losses * mask.float()).sum(0)
+
         q = posterior.log_prob(z).sum(-1)
         prior_p = prior.log_prob(z).sum(-1)
         likelihood[k] = (p + prior_p - q)
 
     likelihood = (torch.logsumexp(likelihood, dim=0) - np.log(S))
 
-
-    return -likelihood.mean(), -likelihood.sum()/mask.sum()
+    return -likelihood.mean(), likelihood.sum()
 
 
 def compute_loss(logits, target, mask):

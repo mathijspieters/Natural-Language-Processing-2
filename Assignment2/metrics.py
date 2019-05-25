@@ -16,7 +16,7 @@ def eval_RNN(out, targets, mask):
     out = torch.nn.functional.softmax(out, dim=-1)
     likelihood = out.gather(dim=-1, index=targets.unsqueeze(-1)).squeeze()
     likelihood = likelihood.log().sum(0)
-    return -likelihood.mean(), (-likelihood.sum()/mask.sum()).exp()
+    return -likelihood.mean(), -likelihood.sum()/mask.sum()
 
 def eval_VAE(SentVAE, inputs, targets, mask, S=10):
     mu, log_sigma = SentVAE.encoder(inputs, mask.sum(0))
@@ -37,7 +37,7 @@ def eval_VAE(SentVAE, inputs, targets, mask, S=10):
     likelihood = (torch.logsumexp(likelihood, dim=0) - np.log(S))
 
 
-    return -likelihood.mean(), (-likelihood.sum()/mask.sum()).exp()
+    return -likelihood.mean(), -likelihood.sum()/mask.sum()
 
 
 def compute_loss(logits, target, mask):

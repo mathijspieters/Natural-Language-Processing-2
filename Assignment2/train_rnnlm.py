@@ -42,7 +42,7 @@ def evaluate(model, data_loader, dataset, device):
             likelihood += ll*N
             perplexity += ppl*N
 
-    return accuracy.item()/num_samples, perplexity.item()/num_samples, likelihood.item()/num_samples
+    return accuracy.item()/num_samples, np.exp(perplexity.item()/num_samples), likelihood.item()/num_samples
 
 
 def train(config):
@@ -120,7 +120,7 @@ def train(config):
             print("Train accuracy-perplexity_likelihood: %.3f %.3f %.3f Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll, eval_acc, eval_ppl, eval_ll))
             torch.save(model.state_dict(), 'rnn-model-%d.pt' % step)
 
-        if step == config.train_steps:
+        if data_loader.epoch == config.epochs:
             break
 
 
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Model params
-    parser.add_argument('--num_hidden', type=int, default=600, help='Number of hidden units in the LSTM')
+    parser.add_argument('--num_hidden', type=int, default=400, help='Number of hidden units in the LSTM')
     parser.add_argument('--num_layers', type=int, default=2, help='Number of LSTM layers in the model')
 
     # Training params
@@ -139,15 +139,12 @@ if __name__ == '__main__':
     # It is not necessary to implement the following three params, but it may help training.
     parser.add_argument('--learning_rate_decay', type=float, default=0.96, help='Learning rate decay fraction')
     parser.add_argument('--learning_rate_step', type=int, default=1000, help='Learning rate step')
-    parser.add_argument('--dropout_keep_prob', type=float, default=1.0, help='Dropout keep probability')
-
-    parser.add_argument('--train_steps', type=int, default=100000, help='Number of training steps')
+    parser.add_argument('--epochs', type=int, default=30, help='Number of training epochs')
 
     # Misc params
     parser.add_argument('--print_every', type=int, default=1000, help='How often to print training progress')
     parser.add_argument('--sample_every', type=int, default=5000, help='How often to sample from the model')
 
-    parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--saved_model', type=str, default='model.pt')
 
     parser.add_argument('--embedding_size', type=int, default=100)

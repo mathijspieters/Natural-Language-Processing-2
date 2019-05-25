@@ -148,8 +148,11 @@ def train(config):
 
             sample = model.sample(dataset.word_2_idx(dataset.SOS), 30)
             sample = data_loader.print_batch(sample, stop_after_EOS=True)
+
+            markdown_str = ''
             for i in range(len(sample)):
-                writer.add_text('RNNLM/Samples', sample[i], current_epoch)
+                markdown_str += '{}  \n'.format(sample[i])
+            writer.add_text('RNNLM/Samples', markdown_str, current_epoch)
 
 
             torch.save(model.state_dict(), 'rnn-model-%d.pt' % current_epoch)

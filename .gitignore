@@ -1,5 +1,2 @@
-.DS_STORE
-__pycache__
-Assignment1/model
-Assignment1/results
-Assignment1/.ipynb_checkpoints
+*.pt
+**/__pycache__/

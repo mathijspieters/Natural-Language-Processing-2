@@ -12,7 +12,8 @@ import metrics
 from RNNLM import RNNLM
 
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
+
+from utils import markdown_hyperparams
 
 def evaluate(model, data_loader, dataset, device):
     accuracy = 0
@@ -75,6 +76,8 @@ def train(config):
     loss_ce_sum, accuracy_sum  = 0, 0
 
     current_epoch = -1
+
+
     for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
         optimizer.zero_grad()
 
@@ -123,9 +126,6 @@ def train(config):
             for i in range(len(sample)):
                 print(sample[i])
 
-
-            writer.text('RNNLM/Samples')
-
         # if step % 5000 == 0:
         if data_loader.epoch != current_epoch:
             current_epoch = data_loader.epoch
@@ -137,19 +137,28 @@ def train(config):
             print("Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll))
             print("Validation accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (val_acc, val_ppl, val_ll))
 
-            writer.add_scalar('RNNLM/Train accuracy', train_acc, step)
-            writer.add_scalar('RNNLM/Train perplexity', train_ppl, step)
-            writer.add_scalar('RNNLM/Train likelihood', train_ll, step)
+            writer.add_scalar('RNNLM/Train accuracy', train_acc, current_epoch)
+            writer.add_scalar('RNNLM/Train perplexity', train_ppl, current_epoch)
+            writer.add_scalar('RNNLM/Train likelihood', train_ll, current_epoch)
 
-            writer.add_scalar('RNNLM/Test accuracy', eval_acc, step)
-            writer.add_scalar('RNNLM/Test perplexity', eval_ppl, step)
-            writer.add_scalar('RNNLM/Test likelihood', eval_ll, step)
+            writer.add_scalar('RNNLM/Test accuracy', eval_acc, current_epoch)
+            writer.add_scalar('RNNLM/Test perplexity', eval_ppl, current_epoch)
+            writer.add_scalar('RNNLM/Test likelihood', eval_ll, current_epoch)
 
-            writer.add_scalar('RNNLM/Valid accuracy', val_acc, step)
-            writer.add_scalar('RNNLM/Valid perplexity', val_ppl, step)
-            writer.add_scalar('RNNLM/Valid likelihood', val_ll, step)
+            writer.add_scalar('RNNLM/Valid accuracy', val_acc, current_epoch)
+            writer.add_scalar('RNNLM/Valid perplexity', val_ppl, current_epoch)
+            writer.add_scalar('RNNLM/Valid likelihood', val_ll, current_epoch)
 
-            torch.save(model.state_dict(), 'rnn-model-%d.pt' % step)
+            sample = model.sample(dataset.word_2_idx(dataset.SOS), 30)
+            sample = data_loader.print_batch(sample, stop_after_EOS=True)
+
+            markdown_str = ''
+            for i in range(len(sample)):
+                markdown_str += '{}  \n'.format(sample[i])
+            writer.add_text('RNNLM/Samples', markdown_str, current_epoch)
+
+
+            torch.save(model.state_dict(), 'models/rnn-model-%d.pt' % current_epoch)
 
         if data_loader.epoch == config.epochs:
             break
@@ -180,6 +189,14 @@ if __name__ == '__main__':
 
     parser.add_argument('--embedding_size', type=int, default=100)
 
+    parser.add_argument('--comment', type=str, default='')
+
     config = parser.parse_args()
+
+    writer = SummaryWriter(comment='-'+config.comment)
+
+    # print hyperparameters to tensorboard
+    params = markdown_hyperparams(config)
+    writer.add_text('RNNLM/Hyperparameters', params)
 
     train(config)

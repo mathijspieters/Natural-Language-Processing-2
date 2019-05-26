@@ -2,8 +2,7 @@ import torch
 import numpy as np
 
 def KL(mu, sigma):
-    # loss = -0.5 * torch.sum(1 + sigma - mu.pow(2) - sigma.exp(), dim=0)
-    loss = 0.5 * (sigma.exp() + mu**2 - sigma - 1).sum(0)
+    loss = -0.5 * torch.sum(1 + sigma - mu.pow(2) - sigma.exp(), dim=1)
     return loss
 
 def ACC(predictions, targets, masks, lengths):

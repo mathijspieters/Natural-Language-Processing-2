@@ -106,6 +106,7 @@ def train(config):
         kl_scale = torch.FloatTensor(1).fill_(min(1.0, annealing_frac ** 2)).to(device)
         kl_loss = kl_scale * kl_loss
 
+
         # free bits
         if config.free_bits:
             kl_loss = torch.max(torch.FloatTensor(1).fill_(config.free_bits).to(device), kl_loss)

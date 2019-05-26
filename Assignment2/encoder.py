@@ -31,5 +31,4 @@ class Encoder(nn.Module):
         mu = self.hidden2mu(h)
         #sigma = self.act(self.hidden2sigma(h))
         sigma = self.hidden2sigma(h)
-
         return mu, sigma

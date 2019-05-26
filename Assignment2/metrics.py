@@ -2,7 +2,8 @@ import torch
 import numpy as np
 
 def KL(mu, sigma):
-    loss = -0.5 * torch.sum(1 + sigma - mu.pow(2) - sigma.exp(), dim=0)
+    # loss = -0.5 * torch.sum(1 + sigma - mu.pow(2) - sigma.exp(), dim=0)
+    loss = 0.5 * (sigma.exp() + mu**2 - sigma - 1).sum(0)
     return loss
 
 def ACC(predictions, targets, masks, lengths):
@@ -41,7 +42,7 @@ def eval_VAE(SentVAE, inputs, targets, mask, device, S=10):
     for k in range(S):
         z = posterior.sample().to(device)
         out = SentVAE.decoder(inputs, z, mask.sum(0))
-        
+
         logits_flat = out.view(-1, out.size(-1))
         # log_probs_flat: (batch * max_len, num_classes)
         log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=1)

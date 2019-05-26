@@ -65,7 +65,8 @@ def train(config):
     print("Size of train dataset: %d" % len(dataset))
     print("Size of test dataset: %d" % len(dataset_test_eval))
 
-    model = SentVAE(dataset.vocab_size, config.embedding_size, config.num_hidden, config.latent_size, config.num_layers, dataset.word_2_idx(dataset.PAD), dataset.word_2_idx(dataset.SOS), device)
+    model = SentVAE(dataset.vocab_size, config.embedding_size, config.num_hidden, config.latent_size, \
+            config.num_layers, dataset.word_2_idx(dataset.PAD), dataset.word_2_idx(dataset.SOS), config.word_dropout, device)
     model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
@@ -95,6 +96,22 @@ def train(config):
         ce_loss = metrics.compute_loss(predictions.transpose(1,0).contiguous(), batch_targets.t().contiguous(), masks.t())
         kl_loss = metrics.KL(mu, sigma).mean()
 
+        # KL annealing
+        annealing_steps = config.annealing_end - config.annealing_start
+        if annealing_steps > 0:
+            annealing_frac = max(0.0, data_loader.epoch - config.annealing_start) / annealing_steps
+        else:
+            annealing_frac = 1.0
+
+        kl_scale = torch.FloatTensor(1).fill_(min(1.0, annealing_frac ** 2)).to(device)
+        kl_loss = kl_scale * kl_loss
+
+        # free bits
+        if config.free_bits:
+            kl_loss = torch.max(torch.FloatTensor(1).fill_(config.free_bits).to(device), kl_loss)
+
+
+        # ELBO
         loss = ce_loss + kl_loss
 
         loss.backward()
@@ -152,6 +169,9 @@ def train(config):
             print("Train accuracy-perplexity_likelihood: %.3f %.3f %.3f" % (eval_acc, eval_ppl, eval_ll))
             print("Test accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (train_acc, train_ppl, train_ll))
             print("Validation accuracy-perplexity-likelihood: %.3f %.3f %.3f" % (val_acc, val_ppl, val_ll))
+
+            writer.add_scalar('SVAE/KL Loss', kl_loss.item(), current_epoch)
+            writer.add_scalar('SVAE/ELBO', loss.item(), current_epoch)
 
             writer.add_scalar('SVAE/Train accuracy', train_acc, current_epoch)
             writer.add_scalar('SVAE/Train perplexity', train_ppl, current_epoch)
@@ -214,6 +234,10 @@ if __name__ == '__main__':
 
     parser.add_argument('--embedding_size', type=int, default=200)
     parser.add_argument('--latent_size', type=int, default=16)
+
+    parser.add_argument('--annealing_start', type=int, default=0)
+    parser.add_argument('--annealing_end', type=int, default=0)
+    parser.add_argument('--free_bits', type=int, default=0)
 
     parser.add_argument('--comment', type=str, default='')
 

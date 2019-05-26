@@ -1,9 +1,12 @@
 import torch
 import torch.nn as nn
+import random
 
 class Decoder(nn.Module):
-    def __init__(self, vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx, sos_idx):
+    def __init__(self, vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx, sos_idx, word_dropout, device):
         super().__init__()
+
+        self.emb_size = emb_size
         self.num_layers = num_layers
         self.hidden_size = hidden_size
 
@@ -16,6 +19,8 @@ class Decoder(nn.Module):
         self.hidden2out = nn.Linear(hidden_size, vocab_size)
 
         self.sos_idx = sos_idx
+        self.word_dropout = word_dropout
+        self.device = device
 
 
     def forward(self, x, z, seq_len):
@@ -30,6 +35,11 @@ class Decoder(nn.Module):
         hidden = hidden.transpose(0, 1).contiguous()
 
         out = self.embedder(x)
+        # for i in range(x.shape[0]):
+        #     for j in range(x.shape[1]):
+        #         if random.random() < self.word_dropout:
+        #             x[i][j] = torch.zeros(self.emb_size, device=self.device)
+
         out = nn.utils.rnn.pack_padded_sequence(out, seq_len)
         out, _ = self.rnn(out, hidden)
         out, _ = nn.utils.rnn.pad_packed_sequence(out)

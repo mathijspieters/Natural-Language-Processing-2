@@ -18,10 +18,10 @@ for kl in kl_annealing:
             os.system(cmd)
 
 # RNNLM EXPERIMENTS
-num_layers = [2, 3]
-num_hidden = [100, 200, 300]
-for nl in num_layers:
-    for nh in num_hidden:
-        cmd = 'python3 train_rnnlm.py --comment {} --num_layers {} --num_hidden {}'.format('{}_num_layers_{}_num_hidden_{}'.format('rnnlm', nl, nh), nl, nh)
-        os.system(cmd)
+#num_layers = [2, 3]
+#num_hidden = [100, 200, 300]
+#for nl in num_layers:
+#    for nh in num_hidden:
+#        cmd = 'python3 train_rnnlm.py --comment {} --num_layers {} --num_hidden {}'.format('{}_num_layers_{}_num_hidden_{}'.format('rnnlm', nl, nh), nl, nh)
+#        os.system(cmd)
 

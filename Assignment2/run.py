@@ -2,9 +2,9 @@ import os
 # BASE RUN
 comment = 'base_run'
 
-for i in range(3):
-    os.system('python3 train_rnnlm.py --comment {}'.format('{}_{}_{}'.format('rnnlm', comment, i)))
-    os.system('python3 train_vae.py --comment {}'.format('{}_{}_{}'.format('vae', comment, i)))
+# for i in range(3):
+#    os.system('python3 train_rnnlm.py --comment {}'.format('{}_{}_{}'.format('rnnlm', comment, i)))
+#    os.system('python3 train_vae.py --comment {}'.format('{}_{}_{}'.format('vae', comment, i)))
 
 # VAE EXPERIMENTS
 # WORD DROPOUT SVAE
@@ -18,10 +18,10 @@ for kl in kl_annealing:
             os.system(cmd)
 
 # RNNLM EXPERIMENTS
-num_layers = [2, 3]
-num_hidden = [100, 200, 300]
-for nl in num_layers:
-    for nh in num_hidden:
-        cmd = 'python3 train_rnnlm.py --comment {} --num_layers {} --num_hidden {}'.format('{}_num_layers_{}_num_hidden_{}'.format('rnnlm', nl, nh), nl, nh)
-        os.system(cmd)
+#num_layers = [2, 3]
+#num_hidden = [100, 200, 300]
+#for nl in num_layers:
+#    for nh in num_hidden:
+#        cmd = 'python3 train_rnnlm.py --comment {} --num_layers {} --num_hidden {}'.format('{}_num_layers_{}_num_hidden_{}'.format('rnnlm', nl, nh), nl, nh)
+#        os.system(cmd)
 

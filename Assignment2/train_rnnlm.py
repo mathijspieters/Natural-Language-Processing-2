@@ -68,6 +68,20 @@ def train(config):
     model = RNNLM(dataset.vocab_size, config.embedding_size, config.num_hidden, config.num_layers, dataset.word_2_idx(dataset.PAD), device)
     model.to(device)
 
+    if config.generate:
+        model.load_state_dict(torch.load('trained_models/rnn-model-20.pt'))
+        markdown_str = ''
+        sample = model.sample(dataset.word_2_idx(dataset.SOS), 30, 10, sample=True)
+        sample = data_loader.print_batch(sample, stop_after_EOS=False)
+        print()
+        for i in range(len(sample)):
+            markdown_str += '{}  \n'.format(sample[i])
+            print(sample[i])
+
+        writer.add_text('RNNLM/Multinomial Samples', markdown_str, 20)
+        exit()
+
+
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config.learning_rate_step, gamma=config.learning_rate_decay)
@@ -189,6 +203,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--embedding_size', type=int, default=200)
 
+    parser.add_argument('--generate', type=int, default=0)
     parser.add_argument('--comment', type=str, default='')
 
     config = parser.parse_args()

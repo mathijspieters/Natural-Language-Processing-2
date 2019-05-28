@@ -13,6 +13,7 @@ class RNNLM(nn.Module):
         self.vocab_size = vocab_size
         self.emb_size = emb_size
         self.hidden_size = hidden_size
+        self.softmax = nn.Softmax(dim=0)
 
     def forward(self, input, lengths):
         seq_len, batch_size = input.size()
@@ -27,21 +28,32 @@ class RNNLM(nn.Module):
         out = out.view(seq_len, batch_size, self.vocab_size)
         return out
 
-    def sample(self, SOS, seq_len, batch_size=8):
+    def sample(self, SOS, seq_len, batch_size=8, sample=False):
         with torch.no_grad():
             out = torch.ones(batch_size, 1, dtype=torch.long).fill_(SOS).to(self.device)
 
             input_ = self.embedding(out)
             out, hidden = self.rnn(input_)
             out = self.hidden2out(out)
-            out = out.argmax(dim=-1)
+
+            if sample:
+                out = out.reshape(-1)
+                softmax = self.softmax(out)
+                out = softmax.multinomial(1).reshape([1,1])
+            else:
+                out = out.argmax(dim=-1)
             sent = out
 
             for _ in range(seq_len-1):
                 input_ = self.embedding(out)
                 out, hidden = self.rnn(input_, hidden)
                 out = self.hidden2out(out)
-                out = out.argmax(dim=-1)
+                if sample:
+                    out = out.reshape(-1)
+                    softmax = self.softmax(out)
+                    out = softmax.multinomial(1).reshape([1,1])
+                else:
+                    out = out.argmax(dim=-1)
                 sent = torch.cat([sent, out], dim=1)
 
         return sent

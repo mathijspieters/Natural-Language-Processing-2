@@ -13,7 +13,7 @@ class RNNLM(nn.Module):
         self.vocab_size = vocab_size
         self.emb_size = emb_size
         self.hidden_size = hidden_size
-        self.softmax = nn.Softmax(dim=0)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, input, lengths):
         seq_len, batch_size = input.size()
@@ -35,11 +35,10 @@ class RNNLM(nn.Module):
             input_ = self.embedding(out)
             out, hidden = self.rnn(input_)
             out = self.hidden2out(out)
-
             if sample:
-                out = out.reshape(-1)
+                out = out.reshape(batch_size, -1)
                 softmax = self.softmax(out)
-                out = softmax.multinomial(1).reshape([1,1])
+                out = softmax.multinomial(1)
             else:
                 out = out.argmax(dim=-1)
             sent = out
@@ -49,9 +48,9 @@ class RNNLM(nn.Module):
                 out, hidden = self.rnn(input_, hidden)
                 out = self.hidden2out(out)
                 if sample:
-                    out = out.reshape(-1)
+                    out = out.reshape(batch_size, -1)
                     softmax = self.softmax(out)
-                    out = softmax.multinomial(1).reshape([1,1])
+                    out = softmax.multinomial(1)
                 else:
                     out = out.argmax(dim=-1)
                 sent = torch.cat([sent, out], dim=1)

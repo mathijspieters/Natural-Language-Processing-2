@@ -72,7 +72,7 @@ def train(config):
         model.load_state_dict(torch.load('trained_models/rnn-model-20.pt'))
         markdown_str = ''
         sample = model.sample(dataset.word_2_idx(dataset.SOS), 30, 10, sample=True)
-        sample = data_loader.print_batch(sample, stop_after_EOS=False)
+        sample = data_loader.print_batch(sample, stop_after_EOS=True)
         print()
         for i in range(len(sample)):
             markdown_str += '{}  \n'.format(sample[i])

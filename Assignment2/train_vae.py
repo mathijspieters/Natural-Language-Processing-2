@@ -69,6 +69,39 @@ def train(config):
             config.num_layers, dataset.word_2_idx(dataset.PAD), dataset.word_2_idx(dataset.SOS), config.word_dropout, device)
     model.to(device)
 
+    if config.generate:
+        model.load_state_dict(torch.load('trained_models/vae-model-39819.pt'))
+        markdown_str = ''
+
+        model.eval()
+        for step, (batch_inputs, batch_targets, masks, lengths) in enumerate(data_loader):
+            batch_inputs = batch_inputs.t().to(device)
+            batch_targets = batch_targets.t().to(device)
+            masks = masks.t().to(device)
+            lengths = lengths.to(device)
+
+            input_sample = data_loader.print_batch(batch_inputs.t(), stop_after_EOS=True)
+            print(input_sample)
+
+            predictions, mu, sigma = model.forward(batch_inputs, lengths, greedy=False, sample=True)
+            predicted_targets = predictions.argmax(dim=-1)
+            non_greedy_sample = data_loader.print_batch(predicted_targets.t(), stop_after_EOS=True)
+            print(non_greedy_sample)
+
+            predictions, mu, sigma = model.forward(batch_inputs, lengths, greedy=True, sample=True)
+            predicted_targets = predictions.argmax(dim=-1)
+            greedy_sample = data_loader.print_batch(predicted_targets.t(), stop_after_EOS=True)
+            print(greedy_sample)
+            break
+        for i, ng, g in zip(input_sample, non_greedy_sample, greedy_sample):
+            print('input: ', i)
+            print('non-greedy: ', ng)
+            print('greedy: ', g)
+            print()
+
+        exit()
+
+
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config.learning_rate_step, gamma=config.learning_rate_decay)
@@ -240,6 +273,7 @@ if __name__ == '__main__':
     parser.add_argument('--annealing_end', type=int, default=0)
     parser.add_argument('--free_bits', type=int, default=0)
 
+    parser.add_argument('--generate', type=int, default=0)
     parser.add_argument('--comment', type=str, default='')
 
     config = parser.parse_args()

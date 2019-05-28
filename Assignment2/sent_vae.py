@@ -14,7 +14,7 @@ class SentVAE(nn.Module):
         self.encoder = Encoder(vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx)
         self.decoder = Decoder(vocab_size, emb_size, hidden_size, latent_size, num_layers, pad_idx, word_dropout, sos_idx, device)
 
-    def forward(self, input, lengths, greedy=False):
+    def forward(self, input, lengths, greedy=False, sample=False):
         mu, sigma = self.encoder(input, lengths)
         eps = torch.normal(torch.zeros_like(mu)).to(self.device)
 
